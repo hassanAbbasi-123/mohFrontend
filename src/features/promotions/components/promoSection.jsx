@@ -254,7 +254,7 @@ export default function HeroBanner() {
           {/* Logo */}
           <Link href="/" className="flex items-center space-x-2 cursor-pointer min-w-max">
             <Image
-              src="/bustardlogo.jpeg"
+              src="/mohcapitallogo.webp"
               alt="Fresh Harvest Logo"
               width={40}
               height={40}
@@ -310,7 +310,7 @@ export default function HeroBanner() {
               <PhoneCall size={18} className={`flex-shrink-0 ${isScrolled ? 'text-green-600' : 'text-yellow-300'}`} />
               <div className="hidden lg:block">
                 <div className={`font-bold ${isScrolled ? 'text-green-700' : 'text-white'}`}>Hot Line 24/7</div>
-                <div className={`text-sm ${isScrolled ? 'text-green-600' : 'text-green-100'}`}>(+92)311-6636050</div>
+                <div className={`text-sm ${isScrolled ? 'text-green-600' : 'text-green-100'}`}>(+91)96476 24282</div>
               </div>
             </div>
 

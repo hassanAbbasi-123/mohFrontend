@@ -76,7 +76,7 @@ export default function ContactAboutPage() {
         <div className="relative max-w-6xl mx-auto">
           <div className="inline-flex items-center gap-2 bg-white/10 backdrop-blur-sm px-6 py-3 rounded-full text-sm font-medium mb-8 border border-white/20">
             <Rocket className="w-4 h-4" />
-            <span>Building Pakistan's Next E-Commerce Leader</span>
+            <span>Building India's Best B2C and B2B Platform</span>
           </div>
           
           <h1 className="text-5xl md:text-7xl font-bold mb-6 tracking-tight">
@@ -84,7 +84,7 @@ export default function ContactAboutPage() {
           </h1>
           
           <p className="text-xl md:text-2xl max-w-3xl mx-auto leading-relaxed font-light mb-8">
-            Empowering dreams, transforming commerce, and building the future of Pakistani e-commerce together
+            Empowering dreams, transforming commerce, and building the future of Indiai e-commerce together
           </p>
           
           <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
@@ -128,16 +128,16 @@ export default function ContactAboutPage() {
                 <div className="space-y-6 text-lg text-gray-700 leading-relaxed">
                   <p className="bg-blue-50 rounded-2xl p-6 border-l-4 border-blue-500">
                     <strong className="text-blue-600">MOH Capital</strong> is an ambitious initiative launched by visionary entrepreneur{" "}
-                    <span className="font-bold text-gray-900">Rana Usman</span>, who envisions building a marketplace that stands shoulder to shoulder with major multi-vendor e-commerce platforms like Daraz and others.
+                    <span className="font-bold text-gray-900">Md.Tajim Sheikh</span>, who envisions building a marketplace that stands shoulder to shoulder with major multi-vendor e-commerce platforms like Daraz and others.
                   </p>
                   
                   <p>
-                    We are driven by a simple yet powerful idea: <strong>empower sellers of all sizes</strong> while giving customers a seamless shopping experience they can trust. MOH Capital is not just a platform—it's a movement to support local businesses, enhance online retail in Pakistan, and ultimately create an ecosystem where innovation and opportunity thrive together.
+                    We are driven by a simple yet powerful idea: <strong>empower sellers of all sizes</strong> while giving customers a seamless shopping experience they can trust. MOH Capital is not just a platform—it's a movement to support local businesses, enhance online retail in India, and ultimately create an ecosystem where innovation and opportunity thrive together.
                   </p>
                   
                   <div className="bg-gradient-to-r from-purple-50 to-blue-50 rounded-2xl p-6 border border-purple-100">
                     <p className="text-purple-700 font-semibold">
-                      Our team is passionate about building technology that serves people.  is still young, but with vision, dedication, and community support, we aim to become a household name in online shopping across Pakistan and beyond.
+                      Our team is passionate about building technology that serves people.  is still young, but with vision, dedication, and community support, we aim to become a household name in online shopping across India and beyond.
                     </p>
                   </div>
                 </div>
@@ -150,12 +150,12 @@ export default function ContactAboutPage() {
                     <Award className="w-8 h-8 text-gray-900" />
                   </div>
                   <div>
-                    <h3 className="text-xl font-bold">Rana Usman</h3>
+                    <h3 className="text-xl font-bold">Md.Tajim Sheikh</h3>
                     <p className="text-blue-200">Founder & Visionary</p>
                   </div>
                 </div>
                 <p className="text-blue-100">
-                  "We're not just building a platform; we're building dreams and creating opportunities for every Pakistani entrepreneur."
+                  "We're not just building a platform; we're building dreams and creating opportunities for every Indiai entrepreneur."
                 </p>
               </div>
             </div>
@@ -167,12 +167,12 @@ export default function ContactAboutPage() {
                   <Globe className="w-16 h-16 mx-auto mb-4" />
                   <h3 className="text-2xl font-bold mb-2">Our Mission</h3>
                   <p className="text-blue-100">
-                    To democratize e-commerce and make digital selling accessible to every Pakistani business
+                    To democratize e-commerce and make digital selling accessible to every Indiai business
                   </p>
                 </div>
                 
                 <img
-                  src="bustardlogo.jpeg"
+                  src="mohcapitallogo.webp"
                   alt="Bustard Team"
                   className="rounded-2xl shadow-lg w-full h-64 object-cover"
                 />
@@ -237,7 +237,7 @@ export default function ContactAboutPage() {
                   <div>
                     <h3 className="font-semibold text-gray-900">Email Us</h3>
                     <a href="mailto:info@MOHCapital.com" className="text-gray-600 hover:text-blue-600 transition-colors">
-                      MOHCapital@gmail.com
+                      mphcapital@gmail.com
                     </a>
                   </div>
                 </div>
@@ -248,7 +248,7 @@ export default function ContactAboutPage() {
                   </div>
                   <div>
                     <h3 className="font-semibold text-gray-900">Call Us</h3>
-                    <p className="text-gray-600">+92 311 6636050</p>
+                    <p className="text-gray-600">+91 96476 24282</p>
                   </div>
                 </div>
 
@@ -258,7 +258,7 @@ export default function ContactAboutPage() {
                   </div>
                   <div>
                     <h3 className="font-semibold text-gray-900">Visit Us</h3>
-                    <p className="text-gray-600"> Pakistan</p>
+                    <p className="text-gray-600"> India</p>
                   </div>
                 </div>
               </div>
@@ -381,7 +381,7 @@ export default function ContactAboutPage() {
             <span className="text-xl font-bold">MOH Capital</span>
           </div>
           <p className="text-gray-300 mb-6 max-w-md mx-auto">
-            Building the future of e-commerce in Pakistan, one seller at a time.
+            Building the future of e-commerce in India, one seller at a time.
           </p>
           <div className="flex flex-wrap justify-center gap-6 text-gray-400 text-sm mb-6">
             <a href="#" className="hover:text-white transition-colors">Privacy Policy</a>
@@ -390,7 +390,7 @@ export default function ContactAboutPage() {
             <a href="#" className="hover:text-white transition-colors">Careers</a>
           </div>
           <p className="text-gray-400 text-sm">
-            © {new Date().getFullYear()} Bustard. Built with ❤️ and passion in Pakistan.
+            © {new Date().getFullYear()} Bustard. Built with ❤️ and passion in India.
           </p>
           <p className="text-gray-400 text-sm">
             Developed By HH-Tech Hub .

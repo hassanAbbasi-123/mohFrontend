@@ -6,8 +6,11 @@ import { ChatProvider } from "@/context/ChatContext";
 import ChatWrapper from "@/components/chat/ChatWrapper"; // 👈 import client wrapper
 
 export const metadata = {
-  title: "Electronics Store",
-  description: "Your one stop electronics shop",
+  title: "Moh Capital Overseas",
+  description: "Reliable Supplier of Premium-quality Garlic-Onion Exporter ",
+   icons: {
+    icon: "/favicon.png",       // ← your custom tab icon
+  },
 };
 
 export default function RootLayout({ children }) {

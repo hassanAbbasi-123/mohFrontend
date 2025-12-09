@@ -358,19 +358,6 @@ export default function Footer() {
                   <div className="w-2 h-2 bg-gradient-to-r from-amber-400 to-yellow-400 rounded-full animate-pulse"></div>
                   <div className="absolute inset-0 w-2 h-2 bg-gradient-to-r from-amber-400 to-yellow-400 rounded-full animate-ping"></div>
                 </div>
-                <span className="text-white/60 group-hover:text-white text-xs font-medium">
-                  Crafted with{" "}
-                  <FaHeart className="w-3 h-3 text-red-400 inline mx-1" />
-                  by{" "}
-                  <a 
-                    href="https://hhtechhub.com" 
-                    target="_blank" 
-                    rel="noopener noreferrer"
-                    className="text-amber-300 hover:text-amber-200 font-bold transition-colors"
-                  >
-                    HH-Tech Hub
-                  </a>
-                </span>
               </div>
               <Globe className="w-3 h-3 text-amber-300" />
             </motion.div>
