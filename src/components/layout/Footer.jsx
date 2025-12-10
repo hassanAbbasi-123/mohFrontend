@@ -147,7 +147,7 @@ export default function Footer() {
             <div className="flex items-center gap-3 mb-6 justify-center sm:justify-start">
               <div className="relative w-12 h-12 bg-gradient-to-r from-green-500 to-emerald-600 rounded-2xl flex items-center justify-center shadow-2xl overflow-hidden">
                 <img
-                  src="/bustardlogo.jpeg"
+                  src="/mohcapitallogo.webp"
                   alt="Bustard Logo"
                   className="w-10 h-10 rounded-xl object-cover"
                   loading="lazy"

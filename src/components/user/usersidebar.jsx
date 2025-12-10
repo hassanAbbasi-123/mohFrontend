@@ -241,7 +241,7 @@ export function AppSidebar() {
             <div className="flex items-center gap-2">
               <div className="h-8 w-8 bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg overflow-hidden">
                 <Image
-                  src="/bustardlogo.jpeg"
+                  src="/mohcapitallogo.webp"
                   alt="Bustard Logo"
                   width={32}
                   height={32}
@@ -295,7 +295,7 @@ export function AppSidebar() {
                   className="h-12 w-12 bg-gradient-to-r from-blue-500 to-purple-600 rounded-2xl flex items-center justify-center shadow-lg overflow-hidden"
                 >
                   <Image
-                    src="/bustardlogo.jpeg"
+                    src="/mohcapitallogo.webp"
                     alt="Bustard Logo"
                     width={48}
                     height={48}
@@ -331,7 +331,7 @@ export function AppSidebar() {
                   className="h-12 w-12 bg-gradient-to-r from-blue-500 to-purple-600 rounded-2xl flex items-center justify-center shadow-lg overflow-hidden"
                 >
                   <Image
-                    src="/bustardlogo.jpeg"
+                    src="/mohcapitallogo.webp"
                     alt="Bustard Logo"
                     width={48}
                     height={48}

@@ -153,7 +153,7 @@ export default function Sidebar({ currentPage, setCurrentPage, isOpen, setIsOpen
               >
                 <div className="h-12 w-12 bg-gradient-to-r from-blue-500 to-purple-600 rounded-2xl flex items-center justify-center shadow-lg overflow-hidden">
                   <Image
-                    src="/bustardlogo.jpeg"
+                    src="/mohcapitallogo.webp"
                     alt="Bustard Logo"
                     width={48}
                     height={48}
