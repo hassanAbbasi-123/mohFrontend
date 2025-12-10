@@ -315,7 +315,7 @@ export default function HeroBanner() {
             </div>
 
             {/* Wishlist */}
-            <Link href="#" className={`p-2 ${isScrolled ? 'text-green-700' : 'text-white'} hover:text-yellow-400 transition-colors drop-shadow-lg`}>
+            <Link href="/signup" className={`p-2 ${isScrolled ? 'text-green-700' : 'text-white'} hover:text-yellow-400 transition-colors drop-shadow-lg`}>
               <Heart size={24} />
             </Link>
 
@@ -333,7 +333,7 @@ export default function HeroBanner() {
               <ShoppingCart className="flex-shrink-0 group-hover:text-yellow-400 transition-colors" size={20} />
               <div>
                 <div className="text-sm font-bold">
-                  Rs. {cartTotal.toLocaleString()}
+                  Inr. {cartTotal.toLocaleString()}
                 </div>
                 <div className="hidden sm:block text-xs opacity-80">
                   {totalItems} {totalItems === 1 ? 'item' : 'items'}
