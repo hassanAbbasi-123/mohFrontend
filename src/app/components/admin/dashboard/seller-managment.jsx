@@ -315,19 +315,19 @@ export default function SellerManagement() {
                           <td className="px-4 sm:px-6 py-4 whitespace-nowrap">
                             <span
                               className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${
-                                seller.seller?.kycStatus === "approved"
+                                seller.kycStatus === "approved"
                                   ? "bg-green-50 text-green-700 ring-1 ring-green-200"
-                                  : seller.seller?.kycStatus === "rejected"
+                                  : seller.kycStatus === "rejected"
                                   ? "bg-red-50 text-red-700 ring-1 ring-red-200"
                                   : "bg-orange-50 text-orange-700 ring-1 ring-orange-200"
                               }`}
                             >
-                              {seller.seller?.kycStatus === "approved" ? (
+                              {seller.kycStatus === "approved" ? (
                                 <>
                                   <CheckCircle className="w-4 h-4 mr-1" />
                                   Approved
                                 </>
-                              ) : seller.seller?.kycStatus === "rejected" ? (
+                              ) : seller.kycStatus === "rejected" ? (
                                 <>
                                   <XCircle className="w-4 h-4 mr-1" />
                                   Rejected
@@ -360,7 +360,7 @@ export default function SellerManagement() {
                           {/* Actions */}
                           <td className="px-4 sm:px-6 py-4 whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
                             <div className="flex items-center gap-2">
-                              {seller.seller?.kycStatus === "pending" && (
+                              {seller.kycStatus === "pending" && (
                                 <>
                                   <button
                                     onClick={() => handleAction(seller._id, "approve")}
