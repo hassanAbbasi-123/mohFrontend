@@ -59,8 +59,8 @@ const AdminProductsPage = () => {
     const matchesSearch = 
       product.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       product.category?.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      product.brand?.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      product.seller?.shopName?.toLowerCase().includes(searchQuery.toLowerCase());
+      product.variety?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      product.seller?.user?.name?.toLowerCase().includes(searchQuery.toLowerCase());
     
     const matchesStatus = statusFilter === "all" || product.status === statusFilter;
     
@@ -121,6 +121,10 @@ const AdminProductsPage = () => {
         color = "bg-red-100 text-red-800 border border-red-200";
         icon = <XCircle className="h-3 w-3 mr-1" />;
         break;
+      case "out-of-season":
+        color = "bg-purple-100 text-purple-800 border border-purple-200";
+        icon = <Hourglass className="h-3 w-3 mr-1" />;
+        break;
       default:
         color = "bg-gray-100 text-gray-800 border border-gray-200";
     }
@@ -128,7 +132,7 @@ const AdminProductsPage = () => {
     return (
       <span className={`px-3 py-1.5 rounded-full text-xs font-medium flex items-center ${color}`}>
         {icon}
-        {status.charAt(0).toUpperCase() + status.slice(1)}
+        {status.charAt(0).toUpperCase() + status.slice(1).replace('-', ' ')}
       </span>
     );
   };
@@ -145,6 +149,7 @@ const AdminProductsPage = () => {
   const approvedCount = products.filter((p) => p.status === "approved").length;
   const rejectedCount = products.filter((p) => p.status === "rejected").length;
   const pendingCount = products.filter((p) => p.status === "pending").length;
+  const outOfSeasonCount = products.filter((p) => p.status === "out-of-season").length;
   const totalCount = products.length;
 
   return (
@@ -168,7 +173,7 @@ const AdminProductsPage = () => {
         </div>
 
         {/* ✅ Stats Section */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-5">
           <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-100 flex items-center gap-4">
             <div className="p-3 bg-blue-50 rounded-lg">
               <Boxes className="h-6 w-6 text-blue-600" />
@@ -208,6 +213,16 @@ const AdminProductsPage = () => {
               <p className="text-2xl font-bold text-amber-700">{pendingCount}</p>
             </div>
           </div>
+          
+          <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-100 flex items-center gap-4">
+            <div className="p-3 bg-purple-50 rounded-lg">
+              <Hourglass className="h-6 w-6 text-purple-600" />
+            </div>
+            <div>
+              <p className="text-sm text-gray-500 font-medium">Out of Season</p>
+              <p className="text-2xl font-bold text-purple-700">{outOfSeasonCount}</p>
+            </div>
+          </div>
         </div>
 
         {/* Filters and Search */}
@@ -217,7 +232,7 @@ const AdminProductsPage = () => {
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
               <input
                 type="text"
-                placeholder="Search products by name, category, brand, or seller..."
+                placeholder="Search products by name, category, variety, or seller..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
@@ -235,6 +250,7 @@ const AdminProductsPage = () => {
                 <option value="approved">Approved</option>
                 <option value="pending">Pending</option>
                 <option value="rejected">Rejected</option>
+                <option value="out-of-season">Out of Season</option>
               </select>
               <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4 pointer-events-none" />
             </div>
@@ -285,7 +301,7 @@ const AdminProductsPage = () => {
                         Category
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Brand
+                        Variety
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Seller
@@ -315,12 +331,12 @@ const AdminProductsPage = () => {
                         </td>
                         <td className="px-6 py-4">
                           <span className="text-sm text-gray-900">
-                            {product.brand?.name || "—"}
+                            {product.variety || "—"}
                           </span>
                         </td>
                         <td className="px-6 py-4">
                           <div className="text-sm text-gray-900">
-                            {product.seller?.shopName || "—"}
+                            {product.seller?.user?.name || "—"}
                           </div>
                           <div className="text-xs text-gray-500">
                             {product.seller?.user?.email || "No email"}
@@ -342,7 +358,7 @@ const AdminProductsPage = () => {
                                       {c.code}
                                     </span>
                                     <span className="text-xs text-gray-500">
-                                      {c.discount}% off
+                                      {c.discountType === 'percentage' ? `${c.discountValue}% off` : `₹${c.discountValue} off`}
                                     </span>
                                   </div>
                                   <button
