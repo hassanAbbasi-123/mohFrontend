@@ -34,6 +34,12 @@ const nextConfig = {
         hostname: "mohcapital-backend.onrender.com",
         pathname: "/uploads/**",
       },
+      // 🔹 Cloudinary (for new image uploads)
+      {
+        protocol: "https",
+        hostname: "res.cloudinary.com",
+        pathname: "/**",
+      },
     ],
   },
 };

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { 
@@ -147,9 +147,21 @@ export default function FeaturedProductsWithSidebar({ addToCart, setQuickViewPro
   ];
 
   // Fetch products based on the selected category
-  const { data: products = [], isLoading: productsLoading } = useGetApprovedProductsQuery({
+  const { data: productsData = null, isLoading: productsLoading } = useGetApprovedProductsQuery({
     category: activeCategory ? activeCategory : undefined,
   });
+
+  const products = useMemo(() => {
+    let products = []
+    if (productsData) {
+      if (Array.isArray(productsData)) {
+        products = productsData
+      } else if (productsData.products && Array.isArray(productsData.products)) {
+        products = productsData.products
+      }
+    }
+    return products
+  }, [productsData])
 
   const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
 

@@ -1,5 +1,4 @@
 'use client'
-
 import { useMemo, useState, useEffect } from "react"
 import Image from "next/image"
 import Link from "next/link"
@@ -17,9 +16,17 @@ export default function RecommendedProducts() {
   }, [])
 
   const recommendedProducts = useMemo(() => {
-    if (!productsData || !Array.isArray(productsData) || productsData.length === 0) return []
+    let products = []
+    if (productsData) {
+      if (Array.isArray(productsData)) {
+        products = productsData
+      } else if (productsData.products && Array.isArray(productsData.products)) {
+        products = productsData.products
+      }
+    }
+    if (products.length === 0) return []
 
-    const withCounts = productsData.map(p => ({
+    const withCounts = products.map(p => ({
       ...p,
       likesCount: p.likes?.length || 0,
       engagementScore: (p.likes?.length || 0) * 2 + (p.reviewCount || 0) * 3

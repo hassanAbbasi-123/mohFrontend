@@ -1,4 +1,3 @@
-// components/HeroBanner.jsx
 'use client'
 
 import { useEffect, useRef, useState, useMemo } from 'react'
@@ -19,49 +18,14 @@ const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
 const defaultSlides = [
   {
     id: 1,
-    title: "Fresh Vegetables",
-    subtitle: "Farm to Table Quality",
+    title: "Moh Capital Overseas ",
+    subtitle: "India's Top Garlic and Onio Exporter",
     bgColor: "from-green-500 to-emerald-600",
-    image: "/vegetables-banner.jpg",
+    image: "/mohcapitallogo.webp",
     overlay: "bg-gradient-to-r",
     textColor: "text-white"
   },
-  {
-    id: 2,
-    title: "Organic Fruits",
-    subtitle: "Nature's Sweetest Treats",
-    bgColor: "from-orange-500 to-red-500",
-    image: "/fruits-banner.jpg",
-    overlay: "bg-gradient-to-br",
-    textColor: "text-white"
-  },
-  {
-    id: 3,
-    title: "Premium Seeds",
-    subtitle: "Grow Your Own Garden",
-    bgColor: "from-amber-500 to-yellow-600",
-    image: "/seeds-banner.jpg",
-    overlay: "bg-gradient-to-tr",
-    textColor: "text-white"
-  },
-  {
-    id: 4,
-    title: "Dried Legumes",
-    subtitle: "Healthy & Nutritious",
-    bgColor: "from-amber-700 to-orange-800",
-    image: "/legumes-banner.jpg",
-    overlay: "bg-gradient-to-l",
-    textColor: "text-white"
-  },
-  {
-    id: 5,
-    title: "Seasonal Specials",
-    subtitle: "Fresh Picked Daily",
-    bgColor: "from-lime-500 to-green-600",
-    image: "/seasonal-banner.jpg",
-    overlay: "bg-gradient-to-t",
-    textColor: "text-white"
-  },
+ 
 ]
 
 export default function HeroBanner() {

@@ -1,12 +1,11 @@
-'use client';
-
+'use client'
 import React, { useState, useRef, useEffect } from 'react';
 import { CartProvider } from '@/context/CartContext';
 import Page from '@/app/(electronics)/Page'; // If this path causes issues, flatten (electronics) too
 import PromoSection from '@/features/promotions/components/promoSection';
 import InfoBar from '@/features/promotions/components/InfoBar';
 import RecommendedProduct from '@/features/products/components/RecommendedProduct';
-import HomePageClient from "@/components/HomePageClient"; // Import if using search params (optional)
+
 
 import { 
   MessageCircle, 

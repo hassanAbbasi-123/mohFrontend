@@ -1,6 +1,6 @@
 // src/app/page.jsx (Server Component - Generates manifest at root)
 import { Suspense } from "react";
-import ClientHome from "./ClientHome";
+import ClientHome from "@/app/ClientHome";
 
 export const dynamic = "force-dynamic"; // Optional: Keeps rendering dynamic for queries/search params
 

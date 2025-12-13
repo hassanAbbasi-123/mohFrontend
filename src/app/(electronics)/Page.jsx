@@ -1,4 +1,4 @@
-// src/app/(electronics)/page.jsx
+
 'use client'
 
 import { useState } from 'react'
