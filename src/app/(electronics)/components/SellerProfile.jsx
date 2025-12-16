@@ -17,9 +17,9 @@ export default function SellerProfile() {
     responseTime: "within 2 hours",
     followers: 12500,
     products: 247,
-    about: "MobileHut is Pakistan's premier destination for authentic smartphones and accessories. We are an authorized retailer for Samsung, Apple, Xiaomi, and other leading brands. All our products come with official warranty and 7-day return policy.",
+    about: "MobileHut is India's premier destination for authentic smartphones and accessories. We are an authorized retailer for Samsung, Apple, Xiaomi, and other leading brands. All our products come with official warranty and 7-day return policy.",
     services: [
-      "Free delivery across Pakistan",
+      "Free delivery across India",
       "Official warranty on all products",
       "7-day easy returns",
       "Installment plans available",
@@ -29,12 +29,12 @@ export default function SellerProfile() {
       phone: "+92 300 1234567",
       email: "contact@mobilehut.pk",
       website: "www.mobilehut.pk",
-      address: "Main Gulberg, Lahore, Pakistan"
+      address: "Main Street, , India"
     },
     socialMedia: {
       facebook: "mobilehutofficial",
       twitter: "mobilehut_pk",
-      instagram: "mobilehut.pakistan"
+      instagram: "mobilehut.India"
     }
   }
 
@@ -137,7 +137,7 @@ export default function SellerProfile() {
       customer: "Usman T.",
       rating: 5,
       date: "2 weeks ago",
-      comment: "Best place to buy phones in Pakistan! Authentic products with proper warranty. Will definitely buy from MobileHut again.",
+      comment: "Best place to buy phones in India! Authentic products with proper warranty. Will definitely buy from MobileHut again.",
       product: "Xiaomi 13 Pro"
     }
   ]
@@ -214,7 +214,7 @@ export default function SellerProfile() {
               <div className="flex items-center text-sm text-blue-600">
                 <span>Joined {seller.joined}</span>
                 <span className="mx-2">•</span>
-                <span>Lahore, Pakistan</span>
+                <span>Lahore, India</span>
               </div>
             </div>
           </div>
@@ -461,7 +461,7 @@ export default function SellerProfile() {
                     <div>
                       <h3 className="text-lg font-semibold text-blue-900 mb-2">Shipping Policy</h3>
                       <p className="text-blue-700">
-                        We offer free shipping across Pakistan for all orders above Rs. 5,000. 
+                        We offer free shipping across India for all orders above Rs. 5,000. 
                         Orders are processed within 24 hours and delivered within 2-5 business days. 
                         You will receive a tracking number once your order is shipped.
                       </p>

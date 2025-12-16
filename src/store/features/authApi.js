@@ -1,4 +1,4 @@
-// src/store/features/authApi.js
+// src/store/features/authApi.js (FULLY UPDATED - added new mutations for OTP verify, resend, forgot, reset)
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
@@ -23,7 +23,6 @@ export const authApi = createApi({
       query: (data) => {
         const isFormData =
           typeof FormData !== 'undefined' && data instanceof FormData;
-
         return {
           url: '/register',
           method: 'POST',
@@ -34,7 +33,6 @@ export const authApi = createApi({
         };
       },
     }),
-
     login: builder.mutation({
       query: (credentials) => ({
         url: '/login',
@@ -43,7 +41,38 @@ export const authApi = createApi({
         headers: { 'Content-Type': 'application/json' },
       }),
     }),
-
+    verifyOtp: builder.mutation({
+      query: ({ userId, otp }) => ({
+        url: '/verify-otp',
+        method: 'POST',
+        body: { userId, otp },
+        headers: { 'Content-Type': 'application/json' },
+      }),
+    }),
+    resendVerificationOtp: builder.mutation({
+      query: ({ email }) => ({
+        url: '/resend-verification-otp',
+        method: 'POST',
+        body: { email },
+        headers: { 'Content-Type': 'application/json' },
+      }),
+    }),
+    forgotPassword: builder.mutation({
+      query: ({ email }) => ({
+        url: '/forgot-password',
+        method: 'POST',
+        body: { email },
+        headers: { 'Content-Type': 'application/json' },
+      }),
+    }),
+    resetPassword: builder.mutation({
+      query: ({ email, otp, newPassword }) => ({
+        url: '/reset-password',
+        method: 'POST',
+        body: { email, otp, newPassword },
+        headers: { 'Content-Type': 'application/json' },
+      }),
+    }),
     approveSeller: builder.mutation({
       query: ({ sellerId, action }) => ({
         url: `/approve-seller/${sellerId}`,
@@ -61,5 +90,9 @@ export const authApi = createApi({
 export const {
   useRegisterMutation,
   useLoginMutation,
+  useVerifyOtpMutation,
+  useResendVerificationOtpMutation,
+  useForgotPasswordMutation,
+  useResetPasswordMutation,
   useApproveSellerMutation,
 } = authApi;

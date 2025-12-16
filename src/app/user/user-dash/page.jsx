@@ -1,4 +1,5 @@
 "use client"
+
 import Image from "next/image"
 import {
   TrendingUp,
@@ -26,7 +27,7 @@ import Link from "next/link";
 export default function Dashboard() {
   const [currentSlide, setCurrentSlide] = useState(0);
   const { toast } = useToast();
-  const { data: allProducts = [], isLoading: productsLoading } = useGetApprovedProductsQuery();
+  const { data: allProductsData, isLoading: productsLoading } = useGetApprovedProductsQuery();
   const { data: categoriesData = [], isLoading: categoriesLoading } = useGetAllCategoriesQuery();
 
   const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
@@ -54,6 +55,7 @@ export default function Dashboard() {
   }));
 
   const shuffleArray = (array) => {
+    if (!Array.isArray(array)) return [];
     const shuffled = [...array];
     for (let i = shuffled.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
@@ -102,6 +104,7 @@ export default function Dashboard() {
     };
   };
 
+  const allProducts = Array.isArray(allProductsData) ? allProductsData : [];
   const shuffledProducts = shuffleArray(allProducts);
   const featuredProducts = shuffledProducts.slice(0, 4).map(computeProductData);
 
@@ -156,16 +159,18 @@ export default function Dashboard() {
   return (
     <div className="min-h-[100dvh] bg-gradient-to-br from-blue-50 to-indigo-100">
       {/* Main content with proper spacing for mobile navbar */}
-      <div className="pt-16 lg:pt-0"> {/* Mobile: 16px top padding, Desktop: 0 */}
+      <div className="pt-16 lg:pt-0">
         <div className="p-3 sm:p-4 md:p-6">
           <div className="max-w-full mx-auto space-y-6 sm:space-y-8 md:space-y-12">
 
-            {/* Hero Section - Fixed for mobile navbar */}
+            {/* Hero Section */}
             <div className="relative rounded-xl sm:rounded-2xl md:rounded-3xl overflow-hidden shadow-lg group">
               <div className="absolute inset-0 bg-gradient-to-r from-blue-900/90 to-indigo-800/80 z-10" />
               <div className="relative w-full h-48 sm:h-64 md:h-80 lg:h-96">
                 <Image
                   src="/hero-placeholder.jpg"
+                  alt="All what you need at Moh Capital over seas"
+
                   fill
                   unoptimized
                   sizes="100vw"
@@ -261,11 +266,13 @@ export default function Dashboard() {
                       <div className="relative h-32 sm:h-36 md:h-40">
                         <Image
                           src={sale.image}
+                        
                           alt={sale.name}
                           fill
                           sizes="(max-width: 640px) 100vw, (max-width: 768px) 50vw, (max-width: 1200px) 50vw, 25vw"
                           className="object-cover"
-                          onError={(e) => { e.currentTarget.src = "/placeholder-product.png"; }}
+                          onError={(e) => { e.currentTarget.src = "/placeholder-product.png",e.currentTarget.  alt="All what you need at Moh Capital over seas"
+; }}
                         />
                         {sale.isOnSale && (
                           <div className="absolute top-2 left-2 bg-gradient-to-r from-red-500 to-orange-500 text-white px-2 py-0.5 rounded-md text-xs font-bold shadow-md">
@@ -347,7 +354,9 @@ export default function Dashboard() {
                         fill
                         sizes="(max-width: 640px) 100vw, (max-width: 768px) 50vw, (max-width: 1200px) 33vw, 25vw"
                         className="object-cover group-hover:scale-105 transition-transform duration-300"
-                        onError={(e) => { e.currentTarget.src = "/placeholder-product.png"; }}
+                        onError={(e) => { e.currentTarget.src = "/placeholder-product.png",
+                          e.currentTarget.  alt="All what you need at Moh Capital over seas"
+; }}
                       />
                       <div className="absolute top-1.5 left-1.5 flex gap-1">
                         {product.tags.map((tag, index) => (

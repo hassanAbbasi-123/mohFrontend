@@ -1,28 +1,36 @@
-'use client';
+// app/(auth)/forgot-password/page.js (UPDATED - integrated with backend: send reset OTP, show success toast, redirect to reset page)
+"use client";
 
-import { useState } from 'react';
-import Head from 'next/head';
-import Image from 'next/image';
-import { useRouter } from 'next/navigation';
+import React, { useState } from "react";
+import { useRouter } from "next/navigation";
+import { useForgotPasswordMutation } from "@/store/features/authApi";
+import toast, { Toaster } from "react-hot-toast";
+import Image from "next/image";
 
 const ForgotPasswordPage = () => {
-  const [email, setEmail] = useState('');
+  const [email, setEmail] = useState("");
   const router = useRouter();
+  const [forgotPassword, { isLoading }] = useForgotPasswordMutation();
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // Handle forgot password logic here
-    console.log('Reset link sent to:', email);
+    if (!email.trim()) {
+      toast.error("Please enter your email");
+      return;
+    }
+
+    try {
+      await forgotPassword({ email }).unwrap();
+      toast.success("If the email exists, a password reset OTP has been sent.");
+      router.push(`/reset-password?email=${encodeURIComponent(email)}`);
+    } catch (err) {
+      toast.error(err?.data?.message || "Failed to send reset OTP");
+    }
   };
 
   return (
     <>
-      <Head>
-        <title>Forgot Password | MOH Capital</title>
-        {/* <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet" />
-        <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet" /> */}
-      </Head>
-
+      <Toaster position="top-center" reverseOrder={false} />
       <div
         className="min-h-screen flex items-center justify-center p-4"
         style={{
@@ -36,10 +44,10 @@ const ForgotPasswordPage = () => {
           <div className="w-full lg:w-1/2 p-4 lg:p-8 flex flex-col justify-center">
             <div className="max-w-lg">
               <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold text-white mb-4 leading-tight">
-            Forgot Your <span style={{ color: '#A362FF' }}>Password?</span>
+                Forgot Your <span style={{ color: '#A362FF' }}>Password?</span>
               </h1>
               <p className="text-gray-400 mb-6 sm:mb-8 text-base sm:text-lg">
-                Enter your email to receive a password reset link and regain access to your MOH Capital account.
+                Enter your email to receive a password reset OTP and regain access to your MOH Capital account.
               </p>
               <div className="relative overflow-hidden rounded-xl aspect-video">
                 <Image
@@ -67,7 +75,7 @@ const ForgotPasswordPage = () => {
               <div className="text-center mb-8">
                 <h2 className="text-2xl font-bold text-white mb-2">Forgot Password?</h2>
                 <p className="text-gray-400 text-sm sm:text-base">
-                  Enter your email to reset your password
+                  Enter your email to receive a reset OTP
                 </p>
               </div>
 
@@ -78,7 +86,6 @@ const ForgotPasswordPage = () => {
                     Email Address
                   </label>
                   <div className="relative">
-                   
                     <input
                       className="w-full pl-10 pr-4 py-3 rounded-lg text-sm sm:text-base focus:outline-none focus:ring-2 focus:ring-purple-500"
                       style={{
@@ -104,12 +111,13 @@ const ForgotPasswordPage = () => {
                     boxShadow: '0 4px 6px rgba(138, 43, 226, 0.2)',
                   }}
                   type="submit"
+                  disabled={isLoading}
                 >
-                  Send Reset Link
+                  {isLoading ? "Sending..." : "Send Reset OTP"}
                 </button>
               </form>
 
-              {/* Back to Login Button */}
+              {/* Back to Login */}
               <div className="mt-6 text-center">
                 <button
                   type="button"
@@ -119,8 +127,7 @@ const ForgotPasswordPage = () => {
                     backgroundColor: '#2D2A37',
                   }}
                 >
-                  <span className="material-icons"> Back to Login</span>
-                  
+                  Back to Login
                 </button>
               </div>
             </div>

@@ -27,12 +27,12 @@ export default function HomePageClient({ initialSearchParams }) {
         <div className="bg-gradient-to-r from-green-600 to-green-700 rounded-2xl p-8 text-white">
           <div className="max-w-2xl">
             <h1 className="text-3xl lg:text-4xl font-bold mb-4">
-              Welcome to PakShop
+              Welcome to Moh-Capital Overseas
               <br />
-              <span className="text-green-200 text-lg">آپ کا اپنا آن لائن مارکیٹ</span>
+              <span className="text-green-200 text-lg">Your own Market</span>
             </h1>
             <p className="text-green-100 text-lg mb-6">
-              Discover amazing products at unbeatable prices. Free delivery across Pakistan!
+              Discover amazing products at unbeatable prices. Free delivery across India!
             </p>
             <div className="flex flex-col sm:flex-row gap-4">
               <a
@@ -136,7 +136,7 @@ export default function HomePageClient({ initialSearchParams }) {
                 <TrendingUp className="h-6 w-6 text-orange-600" />
               </div>
               <h3 className="font-semibold text-gray-900 mb-1">Fast Delivery</h3>
-              <p className="text-sm text-gray-600">2-5 days across Pakistan</p>
+              <p className="text-sm text-gray-600">2-5 days across India</p>
             </div>
           </div>
         </div>

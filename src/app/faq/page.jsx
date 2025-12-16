@@ -62,7 +62,7 @@ export default function FAQPage() {
       {
         id: 1,
         question: "What is MOH Capital?",
-        answer: "MOH Capital is a next-generation multi-vendor e-commerce platform that connects buyers and sellers across Pakistan. It offers a wide variety of products from trusted local and international sellers, ensuring quality, convenience, and secure shopping — all in one place.",
+        answer: "MOH Capital is a next-generation multi-vendor e-commerce platform that connects buyers and sellers across India. It offers a wide variety of products from trusted local and international sellers, ensuring quality, convenience, and secure shopping — all in one place.",
         icon: Zap
       },
       {
@@ -150,7 +150,7 @@ export default function FAQPage() {
       {
         id: 15,
         question: "Is my personal information safe on MOH Capital?",
-        answer: "Absolutely. We use advanced encryption and secure payment gateways to protect your data. MOH Capital is fully compliant with Pakistan's e-commerce data protection standards.",
+        answer: "Absolutely. We use advanced encryption and secure payment gateways to protect your data. MOH Capital is fully compliant with India's e-commerce data protection standards.",
         icon: Lock
       },
       {

@@ -111,7 +111,7 @@ export default function ProductDetail({ product }) {
               <div className="bg-blue-50 rounded-xl p-4 text-center border border-blue-200">
                 <Truck className="w-8 h-8 text-blue-600 mx-auto mb-2" />
                 <p className="text-sm font-medium text-blue-900">Free Delivery</p>
-                <p className="text-xs text-blue-600">Across Pakistan</p>
+                <p className="text-xs text-blue-600">Across India</p>
               </div>
               <div className="bg-blue-50 rounded-xl p-4 text-center border border-blue-200">
                 <Shield className="w-8 h-8 text-blue-600 mx-auto mb-2" />

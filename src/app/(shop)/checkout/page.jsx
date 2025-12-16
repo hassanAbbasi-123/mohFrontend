@@ -23,7 +23,7 @@ export default function CheckoutPage() {
     city: 'Karachi',
     province: 'Sindh',
     postalCode: '',
-    country: 'Pakistan'
+    country: 'India'
   });
   const [showNewAddressForm, setShowNewAddressForm] = useState(false);
   const [error, setError] = useState('');
@@ -57,12 +57,12 @@ export default function CheckoutPage() {
     }
   }, [router]);
 
-  const pakistaniCities = [
+  const IndiaiCities = [
     'Karachi', 'Lahore', 'Islamabad', 'Rawalpindi', 'Faisalabad', 'Multan', 
     'Peshawar', 'Quetta', 'Sialkot', 'Gujranwala', 'Hyderabad', 'Sukkur'
   ];
 
-  const pakistaniProvinces = ['Punjab', 'Sindh', 'Khyber Pakhtunkhwa', 'Balochistan'];
+  const IndiaiProvinces = ['Punjab', 'Sindh', 'Khyber Pakhtunkhwa', 'Balochistan'];
 
   // Calculate order totals
   const subtotal = cartData?.cartTotal || 0;
@@ -439,7 +439,7 @@ export default function CheckoutPage() {
                     disabled
                   />
                   <p className="text-xs text-gray-500 mt-1">
-                    Currently we only deliver within Pakistan
+                    Currently we only deliver within India
                   </p>
                 </div>
               </div>

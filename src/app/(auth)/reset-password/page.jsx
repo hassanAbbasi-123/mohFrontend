@@ -1,34 +1,72 @@
+// app/(auth)/reset-password/page.js (UPDATED - integrated with backend: OTP input + new password, strong password check, success redirect to login)
 "use client";
 
-import { useState } from 'react';
-import Head from 'next/head';
-import Image from 'next/image';
-import { Eye, EyeOff, ArrowLeft } from 'lucide-react';
+import React, { useState } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
+import { useResetPasswordMutation } from "@/store/features/authApi";
+import toast, { Toaster } from "react-hot-toast";
+import { Eye, EyeOff } from "lucide-react";
+import Image from "next/image";
 
 const ResetPasswordPage = () => {
-  const [newPassword, setNewPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const email = searchParams.get("email");
+
+  const [otp, setOtp] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
+  const [resetPassword, { isLoading }] = useResetPasswordMutation();
 
   const togglePasswordVisibility = () => setShowPassword(!showPassword);
   const toggleConfirmPasswordVisibility = () => setShowConfirmPassword(!showConfirmPassword);
 
-  const handleSubmit = (e) => {
+  if (!email) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[#111015] text-white">
+        <p>Invalid reset link.</p>
+      </div>
+    );
+  }
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // Handle password reset logic here
+
+    if (otp.length !== 6) {
+      toast.error("Please enter a 6-digit OTP");
+      return;
+    }
+
+    if (newPassword !== confirmPassword) {
+      toast.error("Passwords do not match");
+      return;
+    }
+
+    if (
+      newPassword.length < 8 ||
+      !/[A-Z]/.test(newPassword) ||
+      !/\d/.test(newPassword) ||
+      !/[!@#$%^&*]/.test(newPassword)
+    ) {
+      toast.error("Password must be at least 8 characters with uppercase, number, and special character");
+      return;
+    }
+
+    try {
+      await resetPassword({ email, otp, newPassword }).unwrap();
+      toast.success("Password reset successful! You can now login.");
+      router.push("/login");
+    } catch (err) {
+      toast.error(err?.data?.message || "Invalid or expired OTP");
+    }
   };
 
   return (
     <>
-      <Head>
-        <title>Reset Password | MOH Capital</title>
-        <link
-          href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap"
-          rel="stylesheet"
-        />
-      </Head>
-
+      <Toaster position="top-center" reverseOrder={false} />
       <div
         className="min-h-screen flex items-center justify-center p-4"
         style={{
@@ -45,8 +83,7 @@ const ResetPasswordPage = () => {
                 Create New <span style={{ color: '#A362FF' }}>Password</span>
               </h1>
               <p className="text-gray-400 mb-6 sm:mb-8 text-base sm:text-lg">
-                Secure your account with a new password. Make sure it's strong
-                and unique.
+                Secure your account with a new password. Make sure it's strong and unique.
               </p>
               <div className="relative overflow-hidden rounded-xl aspect-video">
                 <Image
@@ -76,11 +113,36 @@ const ResetPasswordPage = () => {
                   Reset Password
                 </h2>
                 <p className="text-gray-400 text-sm sm:text-base">
-                  Create a new password for your account
+                  Enter the OTP sent to {email} and your new password
                 </p>
               </div>
 
               <form onSubmit={handleSubmit} className="space-y-5">
+                {/* OTP Field */}
+                <div>
+                  <label
+                    className="block text-sm font-medium text-gray-300 mb-2"
+                    htmlFor="otp"
+                  >
+                    OTP (6 digits)
+                  </label>
+                  <input
+                    className="w-full pl-4 pr-4 py-3 rounded-lg text-center text-2xl tracking-widest"
+                    style={{
+                      backgroundColor: '#2D2A37',
+                      border: '1px solid #4A4656',
+                      transition: 'all 0.3s ease',
+                    }}
+                    id="otp"
+                    placeholder="------"
+                    type="text"
+                    maxLength="6"
+                    value={otp}
+                    onChange={(e) => setOtp(e.target.value.replace(/\D/g, ""))}
+                    required
+                  />
+                </div>
+
                 {/* New Password Field */}
                 <div>
                   <label
@@ -142,11 +204,7 @@ const ResetPasswordPage = () => {
                       onClick={toggleConfirmPasswordVisibility}
                       className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white transition-colors"
                     >
-                      {showConfirmPassword ? (
-                        <EyeOff size={20} />
-                      ) : (
-                        <Eye size={20} />
-                      )}
+                      {showConfirmPassword ? <EyeOff size={20} /> : <Eye size={20} />}
                     </button>
                   </div>
                 </div>
@@ -158,34 +216,16 @@ const ResetPasswordPage = () => {
                 >
                   <p className="font-medium mb-1">Password Requirements:</p>
                   <ul className="list-disc list-inside space-y-1">
-                    <li
-                      className={
-                        newPassword.length >= 8 ? 'text-green-400' : ''
-                      }
-                    >
+                    <li className={newPassword.length >= 8 ? 'text-green-400' : ''}>
                       Minimum 8 characters
                     </li>
-                    <li
-                      className={
-                        /[A-Z]/.test(newPassword) ? 'text-green-400' : ''
-                      }
-                    >
+                    <li className={/[A-Z]/.test(newPassword) ? 'text-green-400' : ''}>
                       At least one uppercase letter
                     </li>
-                    <li
-                      className={
-                        /[0-9]/.test(newPassword) ? 'text-green-400' : ''
-                      }
-                    >
+                    <li className={/[0-9]/.test(newPassword) ? 'text-green-400' : ''}>
                       At least one number
                     </li>
-                    <li
-                      className={
-                        /[^A-Za-z0-9]/.test(newPassword)
-                          ? 'text-green-400'
-                          : ''
-                      }
-                    >
+                    <li className={/[^A-Za-z0-9]/.test(newPassword) ? 'text-green-400' : ''}>
                       At least one special character
                     </li>
                   </ul>
@@ -199,18 +239,18 @@ const ResetPasswordPage = () => {
                     boxShadow: '0 4px 6px rgba(138, 43, 226, 0.2)',
                   }}
                   type="submit"
+                  disabled={isLoading}
                 >
-                  Reset Password
+                  {isLoading ? "Resetting..." : "Reset Password"}
                 </button>
               </form>
 
               {/* Back to Login Link */}
               <div className="mt-6 text-center">
                 <a
-                  href="#"
+                  href="/login"
                   className="inline-flex items-center gap-2 text-sm text-gray-400 hover:text-purple-400 transition-colors"
                 >
-                  <ArrowLeft size={16} />
                   Back to Login
                 </a>
               </div>
