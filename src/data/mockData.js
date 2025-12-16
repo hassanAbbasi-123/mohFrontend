@@ -1,4 +1,4 @@
-// utils/productData.js
+// utils/productData.js (or src/data/mockData.js - FIXED ESLint warning: assigned object to variable before default export)
 
 export const categories = [
   {
@@ -34,7 +34,7 @@ export const categories = [
     name: 'Spices (मसाले)',
     nameHindi: 'मसाले',
     icon: '🌶️',
-    description: 'Indian spices and masale'
+    description: 'Pakistan spices and masale'
   },
   {
     id: 'nuts',
@@ -380,10 +380,12 @@ export const getProductById = (categoryId, productId) => {
   return categoryProducts.find(product => product.id === productId) || null;
 };
 
-export default {
+const productData = {
   categories,
   products,
   getProductsByCategory,
   getCategoryById,
   getProductById
 };
+
+export default productData;

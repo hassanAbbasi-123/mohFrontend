@@ -1,14 +1,67 @@
-// app/(auth)/reset-password/page.js (UPDATED - integrated with backend: OTP input + new password, strong password check, success redirect to login)
 "use client";
 
-import React, { useState } from "react";
+import React, { Suspense, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { useResetPasswordMutation } from "@/store/features/authApi";
 import toast, { Toaster } from "react-hot-toast";
 import { Eye, EyeOff } from "lucide-react";
 import Image from "next/image";
 
-const ResetPasswordPage = () => {
+const LeftSection = () => {
+  return (
+    <div className="w-full lg:w-1/2 p-4 lg:p-8 flex flex-col justify-center">
+      <div className="max-w-lg">
+        <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold text-white mb-4 leading-tight">
+          Create New <span style={{ color: '#A362FF' }}>Password</span>
+        </h1>
+        <p className="text-gray-400 mb-6 sm:mb-8 text-base sm:text-lg">
+          Secure your account with a new password. Make sure it's strong and unique.
+        </p>
+        <div className="relative overflow-hidden rounded-xl aspect-video">
+          <Image
+            src="https://lh3.googleusercontent.com/aida-public/AB6AXuA0zXk0ekqCfzZUBiXdcUBza1qyB9hsacAjeJPEaeZ3k8v9DOWk0yaaNG16ZRdrszqU0F4VTBW3WVu2tRgAgUhKulU34pnVp3OmL2NQO-mKZfIwywx9EKSRTzWJhqohN2cMk1W6DKlGFaOVcVFzBey1qQIP0rRQ3-XfCfqYgP9i0BaB3rkxaD-rJBE_DASNMrcF0Cv3dGd_6FcAUoThXkX77J_MHvNRTsNnEUGGc9qKUsRyAuBOIbLyoBBglB-_9PDdBrR-yFyAM64"
+            alt="Secure password reset"
+            fill
+            className="object-cover w-full h-full transform hover:scale-105 transition-transform duration-500"
+            priority
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 hover:opacity-100 transition-opacity duration-300"></div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const FormSkeleton = () => {
+  return (
+    <div
+      className="w-full max-w-md p-6 sm:p-8 rounded-xl shadow-xl"
+      style={{
+        backgroundColor: '#1E1C24',
+        border: '1px solid #2A2835',
+      }}
+    >
+      <div className="text-center mb-8 space-y-3">
+        <div className="h-8 w-48 bg-gray-700 rounded mx-auto animate-pulse"></div>
+        <div className="h-5 w-80 bg-gray-700 rounded mx-auto animate-pulse"></div>
+      </div>
+
+      <div className="space-y-5">
+        <div className="h-14 bg-gray-700 rounded animate-pulse"></div>
+        <div className="h-14 bg-gray-700 rounded animate-pulse"></div>
+        <div className="h-14 bg-gray-700 rounded animate-pulse"></div>
+        <div className="h-32 bg-gray-700 rounded animate-pulse"></div>
+        <div className="h-14 bg-purple-900 rounded animate-pulse"></div>
+      </div>
+
+      <div className="mt-6 text-center">
+        <div className="h-5 w-32 bg-gray-700 rounded mx-auto animate-pulse"></div>
+      </div>
+    </div>
+  );
+};
+
+const ResetPasswordContent = () => {
   const searchParams = useSearchParams();
   const router = useRouter();
   const email = searchParams.get("email");
@@ -23,14 +76,6 @@ const ResetPasswordPage = () => {
 
   const togglePasswordVisibility = () => setShowPassword(!showPassword);
   const toggleConfirmPasswordVisibility = () => setShowConfirmPassword(!showConfirmPassword);
-
-  if (!email) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-[#111015] text-white">
-        <p>Invalid reset link.</p>
-      </div>
-    );
-  }
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -48,10 +93,10 @@ const ResetPasswordPage = () => {
     if (
       newPassword.length < 8 ||
       !/[A-Z]/.test(newPassword) ||
-      !/\d/.test(newPassword) ||
-      !/[!@#$%^&*]/.test(newPassword)
+      !/[0-9]/.test(newPassword) ||
+      !/[^A-Za-z0-9]/.test(newPassword)
     ) {
-      toast.error("Password must be at least 8 characters with uppercase, number, and special character");
+      toast.error("Password must be at least 8 characters, contain an uppercase letter, a number, and a special character");
       return;
     }
 
@@ -64,202 +109,206 @@ const ResetPasswordPage = () => {
     }
   };
 
+  if (!email) {
+    return (
+      <div
+        className="w-full max-w-md p-6 sm:p-8 rounded-xl shadow-xl text-center"
+        style={{
+          backgroundColor: '#1E1C24',
+          border: '1px solid #2A2835',
+        }}
+      >
+        <p className="text-white text-xl font-bold mb-6">Invalid reset link.</p>
+        <a
+          href="/login"
+          className="text-sm text-gray-400 hover:text-purple-400 transition-colors"
+        >
+          Back to Login
+        </a>
+      </div>
+    );
+  }
+
   return (
     <>
       <Toaster position="top-center" reverseOrder={false} />
       <div
-        className="min-h-screen flex items-center justify-center p-4"
+        className="w-full max-w-md p-6 sm:p-8 rounded-xl shadow-xl"
         style={{
-          fontFamily: "'Roboto', sans-serif",
-          backgroundColor: '#111015',
-          color: '#E0E0E0',
+          backgroundColor: '#1E1C24',
+          border: '1px solid #2A2835',
         }}
       >
-        <div className="container mx-auto flex flex-col lg:flex-row items-center justify-center gap-8 max-w-7xl">
-          {/* Left Section - Welcome Content */}
-          <div className="w-full lg:w-1/2 p-4 lg:p-8 flex flex-col justify-center">
-            <div className="max-w-lg">
-              <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold text-white mb-4 leading-tight">
-                Create New <span style={{ color: '#A362FF' }}>Password</span>
-              </h1>
-              <p className="text-gray-400 mb-6 sm:mb-8 text-base sm:text-lg">
-                Secure your account with a new password. Make sure it's strong and unique.
-              </p>
-              <div className="relative overflow-hidden rounded-xl aspect-video">
-                <Image
-                  src="https://lh3.googleusercontent.com/aida-public/AB6AXuA0zXk0ekqCfzZUBiXdcUBza1qyB9hsacAjeJPEaeZ3k8v9DOWk0yaaNG16ZRdrszqU0F4VTBW3WVu2tRgAgUhKulU34pnVp3OmL2NQO-mKZfIwywx9EKSRTzWJhqohN2cMk1W6DKlGFaOVcVFzBey1qQIP0rRQ3-XfCfqYgP9i0BaB3rkxaD-rJBE_DASNMrcF0Cv3dGd_6FcAUoThXkX77J_MHvNRTsNnEUGGc9qKUsRyAuBOIbLyoBBglB-_9PDdBrR-yFyAM64"
-                  alt="Secure password reset"
-                  width={640}
-                  height={360}
-                  className="object-cover w-full h-full transform hover:scale-105 transition-transform duration-500"
-                  priority
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 hover:opacity-100 transition-opacity duration-300"></div>
-              </div>
-            </div>
-          </div>
+        <div className="text-center mb-8">
+          <h2 className="text-2xl font-bold text-white mb-2">
+            Reset Password
+          </h2>
+          <p className="text-gray-400 text-sm sm:text-base">
+            Enter the OTP sent to {email} and your new password
+          </p>
+        </div>
 
-          {/* Right Section - Reset Password Form */}
-          <div className="w-full lg:w-1/2 flex justify-center">
-            <div
-              className="w-full max-w-md p-6 sm:p-8 rounded-xl shadow-xl"
-              style={{
-                backgroundColor: '#1E1C24',
-                border: '1px solid #2A2835',
-              }}
+        <form onSubmit={handleSubmit} className="space-y-5">
+          {/* OTP Field */}
+          <div>
+            <label
+              className="block text-sm font-medium text-gray-300 mb-2"
+              htmlFor="otp"
             >
-              <div className="text-center mb-8">
-                <h2 className="text-2xl font-bold text-white mb-2">
-                  Reset Password
-                </h2>
-                <p className="text-gray-400 text-sm sm:text-base">
-                  Enter the OTP sent to {email} and your new password
-                </p>
-              </div>
+              OTP (6 digits)
+            </label>
+            <input
+              className="w-full pl-4 pr-4 py-3 rounded-lg text-center text-2xl tracking-widest"
+              style={{
+                backgroundColor: '#2D2A37',
+                border: '1px solid #4A4656',
+                transition: 'all 0.3s ease',
+              }}
+              id="otp"
+              placeholder="------"
+              type="text"
+              maxLength="6"
+              value={otp}
+              onChange={(e) => setOtp(e.target.value.replace(/\D/g, ""))}
+              required
+            />
+          </div>
 
-              <form onSubmit={handleSubmit} className="space-y-5">
-                {/* OTP Field */}
-                <div>
-                  <label
-                    className="block text-sm font-medium text-gray-300 mb-2"
-                    htmlFor="otp"
-                  >
-                    OTP (6 digits)
-                  </label>
-                  <input
-                    className="w-full pl-4 pr-4 py-3 rounded-lg text-center text-2xl tracking-widest"
-                    style={{
-                      backgroundColor: '#2D2A37',
-                      border: '1px solid #4A4656',
-                      transition: 'all 0.3s ease',
-                    }}
-                    id="otp"
-                    placeholder="------"
-                    type="text"
-                    maxLength="6"
-                    value={otp}
-                    onChange={(e) => setOtp(e.target.value.replace(/\D/g, ""))}
-                    required
-                  />
-                </div>
-
-                {/* New Password Field */}
-                <div>
-                  <label
-                    className="block text-sm font-medium text-gray-300 mb-2"
-                    htmlFor="new-password"
-                  >
-                    New Password
-                  </label>
-                  <div className="relative">
-                    <input
-                      className="w-full pl-4 pr-10 py-3 rounded-lg text-sm sm:text-base focus:outline-none focus:ring-2 focus:ring-purple-500"
-                      style={{
-                        backgroundColor: '#2D2A37',
-                        border: '1px solid #4A4656',
-                        transition: 'all 0.3s ease',
-                      }}
-                      id="new-password"
-                      placeholder="Enter new password"
-                      type={showPassword ? 'text' : 'password'}
-                      value={newPassword}
-                      onChange={(e) => setNewPassword(e.target.value)}
-                      required
-                    />
-                    <button
-                      type="button"
-                      onClick={togglePasswordVisibility}
-                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white transition-colors"
-                    >
-                      {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
-                    </button>
-                  </div>
-                </div>
-
-                {/* Confirm Password Field */}
-                <div>
-                  <label
-                    className="block text-sm font-medium text-gray-300 mb-2"
-                    htmlFor="confirm-password"
-                  >
-                    Confirm Password
-                  </label>
-                  <div className="relative">
-                    <input
-                      className="w-full pl-4 pr-10 py-3 rounded-lg text-sm sm:text-base focus:outline-none focus:ring-2 focus:ring-purple-500"
-                      style={{
-                        backgroundColor: '#2D2A37',
-                        border: '1px solid #4A4656',
-                        transition: 'all 0.3s ease',
-                      }}
-                      id="confirm-password"
-                      placeholder="Confirm new password"
-                      type={showConfirmPassword ? 'text' : 'password'}
-                      value={confirmPassword}
-                      onChange={(e) => setConfirmPassword(e.target.value)}
-                      required
-                    />
-                    <button
-                      type="button"
-                      onClick={toggleConfirmPasswordVisibility}
-                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white transition-colors"
-                    >
-                      {showConfirmPassword ? <EyeOff size={20} /> : <Eye size={20} />}
-                    </button>
-                  </div>
-                </div>
-
-                {/* Password Requirements */}
-                <div
-                  className="text-xs text-gray-400 p-3 rounded-lg"
-                  style={{ backgroundColor: '#2D2A37' }}
-                >
-                  <p className="font-medium mb-1">Password Requirements:</p>
-                  <ul className="list-disc list-inside space-y-1">
-                    <li className={newPassword.length >= 8 ? 'text-green-400' : ''}>
-                      Minimum 8 characters
-                    </li>
-                    <li className={/[A-Z]/.test(newPassword) ? 'text-green-400' : ''}>
-                      At least one uppercase letter
-                    </li>
-                    <li className={/[0-9]/.test(newPassword) ? 'text-green-400' : ''}>
-                      At least one number
-                    </li>
-                    <li className={/[^A-Za-z0-9]/.test(newPassword) ? 'text-green-400' : ''}>
-                      At least one special character
-                    </li>
-                  </ul>
-                </div>
-
-                {/* Submit Button */}
-                <button
-                  className="w-full text-white font-bold py-3 px-4 rounded-lg transition-all duration-300 hover:shadow-lg hover:opacity-95"
-                  style={{
-                    background: 'linear-gradient(to right, #8A2BE2, #C462FF)',
-                    boxShadow: '0 4px 6px rgba(138, 43, 226, 0.2)',
-                  }}
-                  type="submit"
-                  disabled={isLoading}
-                >
-                  {isLoading ? "Resetting..." : "Reset Password"}
-                </button>
-              </form>
-
-              {/* Back to Login Link */}
-              <div className="mt-6 text-center">
-                <a
-                  href="/login"
-                  className="inline-flex items-center gap-2 text-sm text-gray-400 hover:text-purple-400 transition-colors"
-                >
-                  Back to Login
-                </a>
-              </div>
+          {/* New Password Field */}
+          <div>
+            <label
+              className="block text-sm font-medium text-gray-300 mb-2"
+              htmlFor="new-password"
+            >
+              New Password
+            </label>
+            <div className="relative">
+              <input
+                className="w-full pl-4 pr-10 py-3 rounded-lg text-sm sm:text-base focus:outline-none focus:ring-2 focus:ring-purple-500"
+                style={{
+                  backgroundColor: '#2D2A37',
+                  border: '1px solid #4A4656',
+                  transition: 'all 0.3s ease',
+                }}
+                id="new-password"
+                placeholder="Enter new password"
+                type={showPassword ? 'text' : 'password'}
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                required
+              />
+              <button
+                type="button"
+                onClick={togglePasswordVisibility}
+                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white transition-colors"
+              >
+                {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+              </button>
             </div>
           </div>
+
+          {/* Confirm Password Field */}
+          <div>
+            <label
+              className="block text-sm font-medium text-gray-300 mb-2"
+              htmlFor="confirm-password"
+            >
+              Confirm Password
+            </label>
+            <div className="relative">
+              <input
+                className="w-full pl-4 pr-10 py-3 rounded-lg text-sm sm:text-base focus:outline-none focus:ring-2 focus:ring-purple-500"
+                style={{
+                  backgroundColor: '#2D2A37',
+                  border: '1px solid #4A4656',
+                  transition: 'all 0.3s ease',
+                }}
+                id="confirm-password"
+                placeholder="Confirm new password"
+                type={showConfirmPassword ? 'text' : 'password'}
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                required
+              />
+              <button
+                type="button"
+                onClick={toggleConfirmPasswordVisibility}
+                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white transition-colors"
+              >
+                {showConfirmPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+              </button>
+            </div>
+          </div>
+
+          {/* Password Requirements */}
+          <div
+            className="text-xs text-gray-400 p-3 rounded-lg"
+            style={{ backgroundColor: '#2D2A37' }}
+          >
+            <p className="font-medium mb-1">Password Requirements:</p>
+            <ul className="list-disc list-inside space-y-1">
+              <li className={newPassword.length >= 8 ? 'text-green-400' : ''}>
+                Minimum 8 characters
+              </li>
+              <li className={/[A-Z]/.test(newPassword) ? 'text-green-400' : ''}>
+                At least one uppercase letter
+              </li>
+              <li className={/[0-9]/.test(newPassword) ? 'text-green-400' : ''}>
+                At least one number
+              </li>
+              <li className={/[^A-Za-z0-9]/.test(newPassword) ? 'text-green-400' : ''}>
+                At least one special character
+              </li>
+            </ul>
+          </div>
+
+          {/* Submit Button */}
+          <button
+            className="w-full text-white font-bold py-3 px-4 rounded-lg transition-all duration-300 hover:shadow-lg hover:opacity-95"
+            style={{
+              background: 'linear-gradient(to right, #8A2BE2, #C462FF)',
+              boxShadow: '0 4px 6px rgba(138, 43, 226, 0.2)',
+            }}
+            type="submit"
+            disabled={isLoading}
+          >
+            {isLoading ? "Resetting..." : "Reset Password"}
+          </button>
+        </form>
+
+        {/* Back to Login Link */}
+        <div className="mt-6 text-center">
+          <a
+            href="/login"
+            className="inline-flex items-center gap-2 text-sm text-gray-400 hover:text-purple-400 transition-colors"
+          >
+            Back to Login
+          </a>
         </div>
       </div>
     </>
   );
 };
 
-export default ResetPasswordPage;
+export default function ResetPasswordPage() {
+  return (
+    <div
+      className="min-h-screen flex items-center justify-center p-4"
+      style={{
+        fontFamily: "'Roboto', sans-serif",
+        backgroundColor: '#111015',
+        color: '#E0E0E0',
+      }}
+    >
+      <div className="container mx-auto flex flex-col lg:flex-row items-center justify-center gap-8 max-w-7xl">
+        <LeftSection />
+
+        <div className="w-full lg:w-1/2 flex justify-center">
+          <Suspense fallback={<FormSkeleton />}>
+            <ResetPasswordContent />
+          </Suspense>
+        </div>
+      </div>
+    </div>
+  );
+}
