@@ -211,7 +211,7 @@ const handleDeleteCoupon = async (id) => {
 
   return (
     <Box sx={{ p: 3 }}>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3, ml: 4}}>
         <Typography variant="h4" component="h1" fontWeight="bold">
           Coupon Management
         </Typography>
@@ -229,7 +229,7 @@ const handleDeleteCoupon = async (id) => {
         <Typography>Loading coupons...</Typography>
       ) : (
         <>
-          <TableContainer component={Paper} elevation={3}>
+          <TableContainer sx={{ ml: 3}} component={Paper} elevation={3}>
             <Table>
               <TableHead>
                 <TableRow sx={{ backgroundColor: 'primary.main' }}>

@@ -70,8 +70,8 @@ export default function SellerInventory() {
         <div style={{ marginBottom: "32px" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "32px", flexWrap: "wrap", gap: "24px" }}>
             <div style={{ flex: "1", minWidth: "300px" }}>
-              <h1 style={{ fontSize: "42px", fontWeight: "700", background: "linear-gradient(135deg, #2d3748 0%, #4a5568 100%)", backgroundClip: "text", WebkitBackgroundClip: "text", color: "transparent", marginBottom: "8px" }}>Inventory Management</h1>
-              <p style={{ color: "#718096", fontSize: "18px", maxWidth: "500px" }}>Manage your product stock with precision and track inventory changes in real-time</p>
+              <h1 style={{ fontSize: "42px", marginLeft: "20px", fontWeight: "700", background: "linear-gradient(135deg, #2d3748 0%, #4a5568 100%)", backgroundClip: "text", WebkitBackgroundClip: "text", color: "transparent", marginBottom: "8px" }}>Inventory Management</h1>
+              <p style={{ color: "#718096", fontSize: "18px",marginLeft: "20px", maxWidth: "500px" }}>Manage your product stock with precision and track inventory changes in real-time</p>
             </div>
             <div style={{ background: "white", padding: "24px", borderRadius: "20px", boxShadow: "0 10px 30px rgba(0,0,0,0.08)", border: "1px solid rgba(255,255,255,0.2)", backdropFilter: "blur(10px)" }}>
               <div style={{ display: "flex", gap: "32px" }}>
@@ -88,7 +88,7 @@ export default function SellerInventory() {
           </div>
 
           {/* Quick Stats Cards */}
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "24px", marginBottom: "32px" }}>
+          <div style={{ display: "grid",marginLeft: "16px", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "px", marginBottom: "32px" }}>
             <div style={{ background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)", color: "white", padding: "32px", borderRadius: "20px", boxShadow: "0 15px 35px rgba(102, 126, 234, 0.3)", position: "relative", overflow: "hidden" }}>
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", position: "relative", zIndex: "2" }}>
                 <div>
@@ -131,7 +131,7 @@ export default function SellerInventory() {
         </div>
 
         {/* Products Table */}
-        <div style={{ background: "white", borderRadius: "20px", boxShadow: "0 10px 30px rgba(0,0,0,0.08)", border: "1px solid rgba(255,255,255,0.2)", overflow: "hidden" }}>
+        <div style={{ background: "white",marginLeft: "18px", borderRadius: "20px", boxShadow: "0 10px 30px rgba(0,0,0,0.08)", border: "1px solid rgba(255,255,255,0.2)", overflow: "hidden" }}>
           <div style={{ padding: "24px", borderBottom: "1px solid #e2e8f0", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "16px" }}>
             <h2 style={{ fontSize: "24px", fontWeight: "600", color: "#2d3748" }}>Product Inventory</h2>
             <div style={{ display: "flex", alignItems: "center", gap: "12px", fontSize: "14px", color: "#718096" }}>

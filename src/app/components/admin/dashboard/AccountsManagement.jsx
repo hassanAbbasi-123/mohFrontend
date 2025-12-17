@@ -6,7 +6,7 @@ import {
     RefreshCw, FileText, UserPlus, Phone, Mail, ShoppingBag, Tag,
     Scale, Receipt, IndianRupee, Warehouse, AlertTriangle, BarChart3,
     Trash2, Edit, Calendar, Truck, ShieldAlert, Gift, FileCheck,
-    ArrowUp, ArrowDown, PieChart
+    ArrowUp, ArrowDown, PieChart, Percent, User, Briefcase
 } from "lucide-react";
 import {
     useGetCustomersQuery,
@@ -28,6 +28,8 @@ import {
     useGetProfitLossReportQuery,
     useGetLowStockAlertsQuery,
     useGetCustomerTransactionsQuery,
+    useGetCommissionCandidatesQuery,
+    useCreateCommissionCandidateMutation,
 } from "../../../../store/features/accountsApi";
 
 // Mock categories for products
@@ -40,6 +42,21 @@ const categories = [
     { id: 'other', name: 'Other', icon: '📦' },
 ];
 
+// Commission candidate types
+const commissionTypes = [
+    { id: 'exporter', name: 'Exporter' },
+    { id: 'delivery', name: 'Delivery Person' },
+    { id: 'agent', name: 'Agent' },
+    { id: 'broker', name: 'Broker' },
+    { id: 'other', name: 'Other' },
+];
+
+// Commission calculation methods
+const commissionMethods = [
+    { id: 'percentage', name: '%' },
+    { id: 'fixed', name: 'INR' }
+];
+
 // Utility function to format currency
 const formatCurrency = (amount) => {
     return `₹${typeof amount === 'number' ? amount.toLocaleString('en-IN') : '0'}`;
@@ -50,7 +67,7 @@ export default function AccountManagement() {
     const [searchTerm, setSearchTerm] = useState("");
     const [selectedCustomer, setSelectedCustomer] = useState(null);
     const [analyticsPeriod, setAnalyticsPeriod] = useState("all");
-    
+
     // Modal states
     const [showCustomerModal, setShowCustomerModal] = useState(false);
     const [showPurchaseModal, setShowPurchaseModal] = useState(false);
@@ -63,6 +80,7 @@ export default function AccountManagement() {
     const [showBullyPurchaseModal, setShowBullyPurchaseModal] = useState(false);
     const [showReminderModal, setShowReminderModal] = useState(false);
     const [showCustomerTransactionsModal, setShowCustomerTransactionsModal] = useState(false);
+    const [showCommissionCandidateModal, setShowCommissionCandidateModal] = useState(false);
 
     // RTK Query Hooks
     const {
@@ -95,6 +113,11 @@ export default function AccountManagement() {
         skip: !selectedCustomer?._id,
     });
 
+    const {
+        data: commissionCandidatesData,
+        refetch: refetchCommissionCandidates,
+    } = useGetCommissionCandidatesQuery();
+
     // Mutation hooks
     const [createCustomer, { isLoading: creatingCustomer }] = useCreateCustomerMutation();
     const [deleteCustomer] = useDeleteCustomerMutation();
@@ -110,6 +133,7 @@ export default function AccountManagement() {
     const [addDamagedGoods] = useAddDamagedGoodsMutation();
     const [addBullyPurchase] = useAddBullyPurchaseMutation();
     const [addReminder] = useAddReminderMutation();
+    const [createCommissionCandidate] = useCreateCommissionCandidateMutation();
 
     // Extract data
     const customers = customersResponse?.data?.customers || [];
@@ -117,6 +141,7 @@ export default function AccountManagement() {
     const lowStockItems = lowStockData?.data?.lowStockItems || [];
     const profitLossReport = profitLossData?.data?.report || {};
     const customerTransactions = customerTransactionsData?.data?.transactions || [];
+    const commissionCandidates = commissionCandidatesData?.data?.candidates || [];
 
     // Form states
     const [customerForm, setCustomerForm] = useState({
@@ -124,8 +149,19 @@ export default function AccountManagement() {
     });
 
     const [purchaseForm, setPurchaseForm] = useState({
-        items: [{ inventoryId: "", quantity: "", unit: "kg", sellingPrice: "" }],
-        totalAmount: 0, paidAmount: "", note: ""
+        items: [{
+            inventoryId: "",
+            quantity: "",
+            unit: "kg",
+            sellingPrice: "",
+            itemCommissionCandidates: []
+        }],
+        commissionCandidates: [],
+        totalAmount: 0,
+        totalCommission: 0,
+        finalAmount: 0,
+        paidAmount: "",
+        note: ""
     });
 
     const [paymentForm, setPaymentForm] = useState({
@@ -163,6 +199,59 @@ export default function AccountManagement() {
         customerId: "", amount: "", reminderDate: new Date().toISOString().split('T')[0], note: ""
     });
 
+    const [commissionCandidateForm, setCommissionCandidateForm] = useState({
+        name: "", type: "exporter", commissionRate: "", contactNumber: ""
+    });
+
+    // Calculate purchase totals
+    useEffect(() => {
+        let total = 0;
+        let totalCommission = 0;
+
+        // Calculate item totals
+        purchaseForm.items.forEach(item => {
+            if (item.quantity && item.sellingPrice) {
+                const itemTotal = parseFloat(item.quantity) * parseFloat(item.sellingPrice);
+                total += itemTotal;
+
+                // Calculate item-level commission
+                if (item.itemCommissionCandidates && item.itemCommissionCandidates.length > 0) {
+                    item.itemCommissionCandidates.forEach(commission => {
+                        if (commission.commissionValue) {
+                            if (commission.commissionMethod === 'percentage') {
+                                const commissionAmount = (itemTotal * parseFloat(commission.commissionValue)) / 100;
+                                totalCommission += commissionAmount;
+                            } else if (commission.commissionMethod === 'fixed') {
+                                totalCommission += parseFloat(commission.commissionValue);
+                            }
+                        }
+                    });
+                }
+            }
+        });
+
+        // Calculate purchase-level commission
+        if (purchaseForm.commissionCandidates && purchaseForm.commissionCandidates.length > 0) {
+            purchaseForm.commissionCandidates.forEach(commission => {
+                if (commission.commissionValue) {
+                    if (commission.commissionMethod === 'percentage') {
+                        const commissionAmount = (total * parseFloat(commission.commissionValue)) / 100;
+                        totalCommission += commissionAmount;
+                    } else if (commission.commissionMethod === 'fixed') {
+                        totalCommission += parseFloat(commission.commissionValue);
+                    }
+                }
+            });
+        }
+
+        setPurchaseForm(prev => ({
+            ...prev,
+            totalAmount: total,
+            totalCommission: totalCommission,
+            finalAmount: total - totalCommission
+        }));
+    }, [purchaseForm.items, purchaseForm.commissionCandidates]);
+
     // Filter customers based on active tab
     const getFilteredCustomers = () => {
         let filtered = customers;
@@ -188,6 +277,7 @@ export default function AccountManagement() {
         netProfit: profitLossReport.netProfit || 0,
         totalExpenses: profitLossReport.totalExpenses || 0,
         totalDamages: profitLossReport.totalDamages || 0,
+        totalPurchaseCommission: profitLossReport.totalPurchaseCommission || 0,
     };
 
     // Handler functions
@@ -202,48 +292,6 @@ export default function AccountManagement() {
             }
         } catch (error) {
             alert(error?.data?.message || 'Error creating customer');
-        }
-    };
-
-    const handleCreatePurchase = async () => {
-        if (!selectedCustomer) return;
-        try {
-            const itemsWithPrices = purchaseForm.items.map(item => {
-                const inventoryItem = inventory.find(inv => inv._id === item.inventoryId);
-                return {
-                    inventoryId: item.inventoryId,
-                    quantity: parseFloat(item.quantity),
-                    unit: item.unit,
-                    sellingPrice: parseFloat(item.sellingPrice),
-                };
-            });
-
-            const totalAmount = itemsWithPrices.reduce((sum, item) => {
-                return sum + (item.quantity * item.sellingPrice);
-            }, 0);
-
-            const purchaseData = {
-                customerId: selectedCustomer._id,
-                items: itemsWithPrices,
-                totalAmount,
-                paidAmount: parseFloat(purchaseForm.paidAmount) || 0,
-                note: purchaseForm.note
-            };
-
-            const result = await createPurchase(purchaseData).unwrap();
-            if (result.status === 'success') {
-                alert('Purchase added successfully!');
-                setShowPurchaseModal(false);
-                setPurchaseForm({
-                    items: [{ inventoryId: "", quantity: "", unit: "kg", sellingPrice: "" }],
-                    totalAmount: 0, paidAmount: "", note: ""
-                });
-                refetchCustomers();
-                refetchInventory();
-                refetchProfitLoss();
-            }
-        } catch (error) {
-            alert(error?.data?.message || 'Error adding purchase');
         }
     };
 
@@ -276,7 +324,7 @@ export default function AccountManagement() {
                 costPrice: parseFloat(inventoryForm.costPrice),
                 minStockLevel: parseFloat(inventoryForm.minStockLevel) || 0
             };
-            
+
             const result = await addInventory(inventoryData).unwrap();
             if (result.status === 'success') {
                 alert('Inventory item added successfully!');
@@ -299,7 +347,7 @@ export default function AccountManagement() {
                 quantity: parseFloat(stockPurchaseForm.quantity),
                 pricePerUnit: parseFloat(stockPurchaseForm.pricePerUnit)
             };
-            
+
             const result = await addStockPurchase(stockData).unwrap();
             if (result.status === 'success') {
                 alert('Stock purchased successfully!');
@@ -322,7 +370,7 @@ export default function AccountManagement() {
                 ...expenseForm,
                 amount: parseFloat(expenseForm.amount)
             };
-            
+
             const result = await addExpense(expenseData).unwrap();
             if (result.status === 'success') {
                 alert('Expense added successfully!');
@@ -343,7 +391,7 @@ export default function AccountManagement() {
                 ...commissionForm,
                 amount: parseFloat(commissionForm.amount)
             };
-            
+
             const result = await addCommission(commissionData).unwrap();
             if (result.status === 'success') {
                 alert('Commission added successfully!');
@@ -364,7 +412,7 @@ export default function AccountManagement() {
                 ...damagedGoodsForm,
                 quantity: parseFloat(damagedGoodsForm.quantity)
             };
-            
+
             const result = await addDamagedGoods(damagedData).unwrap();
             if (result.status === 'success') {
                 alert('Damaged goods recorded successfully!');
@@ -389,7 +437,7 @@ export default function AccountManagement() {
                     quantity: parseFloat(item.quantity)
                 }))
             };
-            
+
             const result = await addBullyPurchase(bullyData).unwrap();
             if (result.status === 'success') {
                 alert('Bully purchase recorded successfully!');
@@ -412,7 +460,7 @@ export default function AccountManagement() {
                 ...reminderForm,
                 amount: parseFloat(reminderForm.amount)
             };
-            
+
             const result = await addReminder(reminderData).unwrap();
             if (result.status === 'success') {
                 alert('Reminder added successfully!');
@@ -426,11 +474,33 @@ export default function AccountManagement() {
         }
     };
 
+    const handleAddCommissionCandidate = async () => {
+        try {
+            const candidateData = {
+                ...commissionCandidateForm,
+                commissionRate: parseFloat(commissionCandidateForm.commissionRate) || 0
+            };
+
+            const result = await createCommissionCandidate(candidateData).unwrap();
+            if (result.status === 'success') {
+                alert('Commission candidate added successfully!');
+                setShowCommissionCandidateModal(false);
+                setCommissionCandidateForm({
+                    name: "", type: "exporter", commissionRate: "", contactNumber: ""
+                });
+                refetchCommissionCandidates();
+            }
+        } catch (error) {
+            alert(error?.data?.message || 'Error adding commission candidate');
+        }
+    };
+
     const handleRefresh = () => {
         refetchCustomers();
         refetchInventory();
         refetchProfitLoss();
         refetchLowStock();
+        refetchCommissionCandidates();
     };
 
     const handleDeleteCustomer = async (customerId) => {
@@ -472,8 +542,8 @@ export default function AccountManagement() {
     const AnalyticsPeriodSelector = () => (
         <div className="flex items-center gap-2">
             <label className="text-sm font-medium text-gray-700">Period:</label>
-            <select 
-                value={analyticsPeriod} 
+            <select
+                value={analyticsPeriod}
                 onChange={(e) => setAnalyticsPeriod(e.target.value)}
                 className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-200 focus:border-indigo-500 outline-none"
             >
@@ -492,11 +562,183 @@ export default function AccountManagement() {
         }
         if (!showPurchaseModal) {
             setPurchaseForm({
-                items: [{ inventoryId: "", quantity: "", unit: "kg", sellingPrice: "" }],
-                totalAmount: 0, paidAmount: "", note: ""
+                items: [{
+                    inventoryId: "",
+                    quantity: "",
+                    unit: "kg",
+                    sellingPrice: "",
+                    itemCommissionCandidates: []
+                }],
+                commissionCandidates: [],
+                totalAmount: 0,
+                totalCommission: 0,
+                finalAmount: 0,
+                paidAmount: "",
+                note: ""
             });
         }
     }, [showCustomerModal, showPurchaseModal]);
+
+
+    const handleItemCommissionChange = (itemIndex, commissionIndex, field, value) => {
+        setPurchaseForm(prev => {
+            const updatedItems = [...prev.items];
+            const updatedCommissions = [...updatedItems[itemIndex].itemCommissionCandidates];
+            updatedCommissions[commissionIndex] = {
+                ...updatedCommissions[commissionIndex],
+                [field]: value
+            };
+
+            // If changing candidateType to something other than 'other', clear otherCandidate
+            if (field === 'candidateType' && value !== 'other') {
+                updatedCommissions[commissionIndex].otherCandidate = "";
+            }
+
+            updatedItems[itemIndex].itemCommissionCandidates = updatedCommissions;
+            return { ...prev, items: updatedItems };
+        });
+    };
+
+    const handleRemoveItemCommission = (itemIndex, commissionIndex) => {
+        setPurchaseForm(prev => {
+            const updatedItems = [...prev.items];
+            updatedItems[itemIndex] = {
+                ...updatedItems[itemIndex],
+                itemCommissionCandidates: updatedItems[itemIndex].itemCommissionCandidates.filter((_, i) => i !== commissionIndex)
+            };
+            return { ...prev, items: updatedItems };
+        });
+    };
+
+    const handleAddItemCommission = (itemIndex) => {
+        setPurchaseForm(prev => {
+            const updatedItems = [...prev.items];
+            updatedItems[itemIndex] = {
+                ...updatedItems[itemIndex],
+                itemCommissionCandidates: [
+                    ...(updatedItems[itemIndex].itemCommissionCandidates || []),
+                    {
+                        candidateType: "",
+                        otherCandidate: "",
+                        commissionMethod: "percentage",
+                        commissionValue: ""
+                    }
+                ]
+            };
+            return { ...prev, items: updatedItems };
+        });
+    };
+
+    const handleAddPurchaseCommission = () => {
+        setPurchaseForm(prev => ({
+            ...prev,
+            commissionCandidates: [
+                ...prev.commissionCandidates,
+                {
+                    candidateType: "",
+                    otherCandidate: "",
+                    commissionMethod: "percentage",
+                    commissionValue: ""
+                }
+            ]
+        }));
+    };
+
+    const handlePurchaseCommissionChange = (index, field, value) => {
+        setPurchaseForm(prev => {
+            const updatedCommissions = [...prev.commissionCandidates];
+            updatedCommissions[index] = {
+                ...updatedCommissions[index],
+                [field]: value
+            };
+
+            // If changing candidateType to something other than 'other', clear otherCandidate
+            if (field === 'candidateType' && value !== 'other') {
+                updatedCommissions[index].otherCandidate = "";
+            }
+
+            return { ...prev, commissionCandidates: updatedCommissions };
+        });
+    };
+
+    const handleRemovePurchaseCommission = (index) => {
+        setPurchaseForm(prev => ({
+            ...prev,
+            commissionCandidates: prev.commissionCandidates.filter((_, i) => i !== index)
+        }));
+    };
+
+    const handleCreatePurchase = async () => {
+        if (!selectedCustomer) return;
+        try {
+            const itemsWithPrices = purchaseForm.items.map(item => {
+                const inventoryItem = inventory.find(inv => inv._id === item.inventoryId);
+
+                // Format item commission candidates
+                const formattedItemCommissions = item.itemCommissionCandidates?.map(commission => {
+                    return {
+                        candidateType: commission.candidateType,
+                        otherCandidate: commission.candidateType === 'other' ? commission.otherCandidate : undefined,
+                        commissionMethod: commission.commissionMethod,
+                        commissionValue: parseFloat(commission.commissionValue) || 0
+                    };
+                }) || [];
+
+                return {
+                    inventoryId: item.inventoryId,
+                    quantity: parseFloat(item.quantity),
+                    unit: item.unit,
+                    sellingPrice: parseFloat(item.sellingPrice),
+                    itemCommissionCandidates: formattedItemCommissions
+                };
+            });
+
+            // Format purchase-level commission candidates
+            const formattedPurchaseCommissions = purchaseForm.commissionCandidates?.map(commission => {
+                return {
+                    candidateType: commission.candidateType,
+                    otherCandidate: commission.candidateType === 'other' ? commission.otherCandidate : undefined,
+                    commissionMethod: commission.commissionMethod,
+                    commissionValue: parseFloat(commission.commissionValue) || 0
+                };
+            }) || [];
+
+            const purchaseData = {
+                customerId: selectedCustomer._id,
+                items: itemsWithPrices,
+                totalAmount: purchaseForm.totalAmount,
+                paidAmount: parseFloat(purchaseForm.paidAmount) || 0,
+                note: purchaseForm.note,
+                commissionCandidates: formattedPurchaseCommissions
+            };
+
+            const result = await createPurchase(purchaseData).unwrap();
+            if (result.status === 'success') {
+                alert('Purchase added successfully!');
+                setShowPurchaseModal(false);
+                setPurchaseForm({
+                    items: [{
+                        inventoryId: "",
+                        quantity: "",
+                        unit: "kg",
+                        sellingPrice: "",
+                        itemCommissionCandidates: []
+                    }],
+                    commissionCandidates: [],
+                    totalAmount: 0,
+                    totalCommission: 0,
+                    finalAmount: 0,
+                    paidAmount: "",
+                    note: ""
+                });
+                refetchCustomers();
+                refetchInventory();
+                refetchProfitLoss();
+            }
+        } catch (error) {
+            alert(error?.data?.message || 'Error adding purchase');
+        }
+    };
 
     if (customersError) {
         return (
@@ -519,7 +761,7 @@ export default function AccountManagement() {
                     <h1 className="text-3xl font-bold text-gray-800">Account Management</h1>
                     <p className="text-gray-600 mt-1">Manage customers, inventory, and financial transactions</p>
                 </div>
-                <button 
+                <button
                     onClick={handleRefresh}
                     className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 hover:border-gray-400 rounded-lg text-gray-700 font-medium transition-all duration-200"
                 >
@@ -532,39 +774,39 @@ export default function AccountManagement() {
                 <h2 className="text-2xl font-bold text-gray-800">Dashboard Analytics</h2>
                 <AnalyticsPeriodSelector />
             </div>
-            
+
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-                <AnalyticCard 
-                    title="Total Revenue" 
-                    value={formatCurrency(stats.totalRevenue)} 
-                    icon={DollarSign} 
-                    color="blue" 
+                <AnalyticCard
+                    title="Total Revenue"
+                    value={formatCurrency(stats.totalRevenue)}
+                    icon={DollarSign}
+                    color="blue"
                     loading={customersLoading}
                 />
-                <AnalyticCard 
-                    title="Net Profit" 
-                    value={formatCurrency(stats.netProfit)} 
-                    icon={BarChart3} 
-                    color={stats.netProfit >= 0 ? "green" : "red"} 
+                <AnalyticCard
+                    title="Net Profit"
+                    value={formatCurrency(stats.netProfit)}
+                    icon={BarChart3}
+                    color={stats.netProfit >= 0 ? "green" : "red"}
                     loading={customersLoading}
                 />
-                <AnalyticCard 
-                    title="Total Expenses" 
-                    value={formatCurrency(stats.totalExpenses)} 
-                    icon={Receipt} 
-                    color="amber" 
+                <AnalyticCard
+                    title="Purchase Commission"
+                    value={formatCurrency(stats.totalPurchaseCommission)}
+                    icon={Percent}
+                    color="purple"
                     loading={customersLoading}
                 />
-                <AnalyticCard 
-                    title="Outstanding Balance" 
-                    value={formatCurrency(stats.totalOutstanding)} 
-                    icon={CreditCard} 
-                    color="orange" 
+                <AnalyticCard
+                    title="Outstanding Balance"
+                    value={formatCurrency(stats.totalOutstanding)}
+                    icon={CreditCard}
+                    color="orange"
                     loading={customersLoading}
                 />
             </div>
 
-            {/* Main Navigation */}
+            {/* Main Navigation - UPDATED to include Commission Candidates */}
             <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden mb-6">
                 <div className="border-b border-gray-200">
                     <div className="flex flex-wrap">
@@ -572,10 +814,11 @@ export default function AccountManagement() {
                             { id: "dashboard", name: "Dashboard", icon: BarChart3 },
                             { id: "customers", name: "Customers", icon: Users },
                             { id: "inventory", name: "Inventory", icon: Warehouse },
+                            { id: "commissionCandidates", name: "Commission Info", icon: User },
                             { id: "reports", name: "Reports", icon: PieChart },
                         ].map((tab) => (
-                            <button 
-                                key={tab.id} 
+                            <button
+                                key={tab.id}
                                 onClick={() => setActiveTab(tab.id)}
                                 className={`flex items-center gap-2 px-6 py-4 border-b-2 font-medium text-sm transition-all duration-200 ${activeTab === tab.id ? "border-indigo-600 text-indigo-600 bg-indigo-50" : "border-transparent text-gray-500 hover:text-gray-700 hover:bg-gray-50"}`}
                             >
@@ -593,13 +836,15 @@ export default function AccountManagement() {
                     {/* Quick Actions */}
                     <div className="lg:col-span-2 bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
                         <h3 className="text-lg font-semibold text-gray-800 mb-4">Quick Actions</h3>
-                        <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
+                        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
                             <ActionButton icon={UserPlus} label="New Customer" onClick={() => setShowCustomerModal(true)} color="blue" />
                             <ActionButton icon={Warehouse} label="Add Inventory" onClick={() => setShowInventoryModal(true)} color="green" />
                             <ActionButton icon={Truck} label="Stock Purchase" onClick={() => setShowStockPurchaseModal(true)} color="orange" />
                             <ActionButton icon={Receipt} label="Add Expense" onClick={() => setShowExpenseModal(true)} color="red" />
                             <ActionButton icon={Gift} label="Add Commission" onClick={() => setShowCommissionModal(true)} color="purple" />
                             <ActionButton icon={ShieldAlert} label="Damaged Goods" onClick={() => setShowDamagedGoodsModal(true)} color="amber" />
+                            <ActionButton icon={User} label="Add Commission Info" color="indigo" onClick={() => setShowCommissionCandidateModal(true)} />
+                            <ActionButton icon={Briefcase} label="View Commission Info" color="indigo" onClick={() => setActiveTab("commissionCandidates")} />
                         </div>
                     </div>
 
@@ -641,8 +886,8 @@ export default function AccountManagement() {
 
             {/* Customers View */}
             {activeTab === "customers" && (
-                <CustomersView 
-                    customers={filteredCustomers} 
+                <CustomersView
+                    customers={filteredCustomers}
                     loading={customersLoading}
                     onAddPurchase={(customer) => {
                         setSelectedCustomer(customer);
@@ -655,8 +900,8 @@ export default function AccountManagement() {
                     onAddReminder={(customer) => {
                         setSelectedCustomer(customer);
                         setReminderForm({
-                            ...reminderForm, 
-                            customerId: customer._id, 
+                            ...reminderForm,
+                            customerId: customer._id,
                             amount: customer.currentBalance > 0 ? customer.currentBalance.toString() : ""
                         });
                         setShowReminderModal(true);
@@ -674,21 +919,30 @@ export default function AccountManagement() {
 
             {/* Inventory View */}
             {activeTab === "inventory" && (
-                <InventoryView 
+                <InventoryView
                     inventory={inventory}
                     loading={inventoryLoading}
                     onRefresh={refetchInventory}
                     onNewInventory={() => setShowInventoryModal(true)}
                     onStockPurchase={(item) => {
-                        setStockPurchaseForm({...stockPurchaseForm, inventoryId: item._id});
+                        setStockPurchaseForm({ ...stockPurchaseForm, inventoryId: item._id });
                         setShowStockPurchaseModal(true);
                     }}
                 />
             )}
 
+            {/* Commission Candidates View */}
+            {activeTab === "commissionCandidates" && (
+                <CommissionCandidatesView
+                    candidates={commissionCandidates}
+                    onRefresh={refetchCommissionCandidates}
+                    onNewCandidate={() => setShowCommissionCandidateModal(true)}
+                />
+            )}
+
             {/* Reports View */}
             {activeTab === "reports" && (
-                <ReportsView 
+                <ReportsView
                     profitLossReport={profitLossReport}
                     customers={customers}
                     inventory={inventory}
@@ -698,113 +952,122 @@ export default function AccountManagement() {
             )}
 
             {/* All Modals */}
-            <CustomerModal 
-                show={showCustomerModal} 
-                onClose={() => setShowCustomerModal(false)} 
-                form={customerForm} 
-                setForm={setCustomerForm} 
-                onSubmit={handleCreateCustomer} 
-                loading={creatingCustomer} 
+            <CustomerModal
+                show={showCustomerModal}
+                onClose={() => setShowCustomerModal(false)}
+                form={customerForm}
+                setForm={setCustomerForm}
+                onSubmit={handleCreateCustomer}
+                loading={creatingCustomer}
             />
-            <PurchaseModal 
-                show={showPurchaseModal} 
-                onClose={() => setShowPurchaseModal(false)} 
-                customer={selectedCustomer} 
-                inventory={inventory} 
-                form={purchaseForm} 
-                setForm={setPurchaseForm} 
-                onSubmit={handleCreatePurchase} 
-                loading={creatingPurchase} 
+            <PurchaseModal
+                show={showPurchaseModal}
+                onClose={() => setShowPurchaseModal(false)}
+                customer={selectedCustomer}
+                inventory={inventory}
+                commissionCandidates={commissionCandidates}
+                form={purchaseForm}
+                setForm={setPurchaseForm}
+                onSubmit={handleCreatePurchase}
+                loading={creatingPurchase}
             />
-            <PaymentModal 
-                show={showPaymentModal} 
-                onClose={() => setShowPaymentModal(false)} 
-                customer={selectedCustomer} 
-                form={paymentForm} 
-                setForm={setPaymentForm} 
-                onSubmit={handleMakePayment} 
-                loading={makingPayment} 
+            <PaymentModal
+                show={showPaymentModal}
+                onClose={() => setShowPaymentModal(false)}
+                customer={selectedCustomer}
+                form={paymentForm}
+                setForm={setPaymentForm}
+                onSubmit={handleMakePayment}
+                loading={makingPayment}
             />
-            <InventoryModal 
-                show={showInventoryModal} 
-                onClose={() => setShowInventoryModal(false)} 
-                form={inventoryForm} 
-                setForm={setInventoryForm} 
-                onSubmit={handleAddInventory} 
-                categories={categories} 
+            <InventoryModal
+                show={showInventoryModal}
+                onClose={() => setShowInventoryModal(false)}
+                form={inventoryForm}
+                setForm={setInventoryForm}
+                onSubmit={handleAddInventory}
+                categories={categories}
             />
-            <StockPurchaseModal 
-                show={showStockPurchaseModal} 
-                onClose={() => setShowStockPurchaseModal(false)} 
-                inventory={inventory} 
-                form={stockPurchaseForm} 
-                setForm={setStockPurchaseForm} 
-                onSubmit={handleStockPurchase} 
+            <StockPurchaseModal
+                show={showStockPurchaseModal}
+                onClose={() => setShowStockPurchaseModal(false)}
+                inventory={inventory}
+                form={stockPurchaseForm}
+                setForm={setStockPurchaseForm}
+                onSubmit={handleStockPurchase}
             />
-            <ExpenseModal 
-                show={showExpenseModal} 
-                onClose={() => setShowExpenseModal(false)} 
-                form={expenseForm} 
-                setForm={setExpenseForm} 
-                onSubmit={handleAddExpense} 
+            <ExpenseModal
+                show={showExpenseModal}
+                onClose={() => setShowExpenseModal(false)}
+                form={expenseForm}
+                setForm={setExpenseForm}
+                onSubmit={handleAddExpense}
             />
-            <CommissionModal 
-                show={showCommissionModal} 
-                onClose={() => setShowCommissionModal(false)} 
-                form={commissionForm} 
-                setForm={setCommissionForm} 
-                onSubmit={handleAddCommission} 
+            <CommissionModal
+                show={showCommissionModal}
+                onClose={() => setShowCommissionModal(false)}
+                form={commissionForm}
+                setForm={setCommissionForm}
+                onSubmit={handleAddCommission}
             />
-            <DamagedGoodsModal 
-                show={showDamagedGoodsModal} 
-                onClose={() => setShowDamagedGoodsModal(false)} 
-                inventory={inventory} 
-                form={damagedGoodsForm} 
-                setForm={setDamagedGoodsForm} 
-                onSubmit={handleAddDamagedGoods} 
+            <DamagedGoodsModal
+                show={showDamagedGoodsModal}
+                onClose={() => setShowDamagedGoodsModal(false)}
+                inventory={inventory}
+                form={damagedGoodsForm}
+                setForm={setDamagedGoodsForm}
+                onSubmit={handleAddDamagedGoods}
             />
-            <BullyPurchaseModal 
-                show={showBullyPurchaseModal} 
-                onClose={() => setShowBullyPurchaseModal(false)} 
-                inventory={inventory} 
-                form={bullyPurchaseForm} 
-                setForm={setBullyPurchaseForm} 
-                onSubmit={handleAddBullyPurchase} 
+            <BullyPurchaseModal
+                show={showBullyPurchaseModal}
+                onClose={() => setShowBullyPurchaseModal(false)}
+                inventory={inventory}
+                form={bullyPurchaseForm}
+                setForm={setBullyPurchaseForm}
+                onSubmit={handleAddBullyPurchase}
             />
-            <ReminderModal 
-                show={showReminderModal} 
-                onClose={() => setShowReminderModal(false)} 
-                customers={customers} 
-                form={reminderForm} 
-                setForm={setReminderForm} 
-                onSubmit={handleAddReminder} 
+            <ReminderModal
+                show={showReminderModal}
+                onClose={() => setShowReminderModal(false)}
+                customers={customers}
+                form={reminderForm}
+                setForm={setReminderForm}
+                onSubmit={handleAddReminder}
             />
-            <CustomerTransactionsModal 
+            <CustomerTransactionsModal
                 show={showCustomerTransactionsModal}
                 onClose={() => setShowCustomerTransactionsModal(false)}
                 customer={selectedCustomer}
                 transactions={customerTransactions}
                 loading={!customerTransactionsData}
             />
+            <CommissionCandidateModal
+                show={showCommissionCandidateModal}
+                onClose={() => setShowCommissionCandidateModal(false)}
+                form={commissionCandidateForm}
+                setForm={setCommissionCandidateForm}
+                onSubmit={handleAddCommissionCandidate}
+                commissionTypes={commissionTypes}
+            />
         </div>
     );
 }
 
 // Sub-components
-function CustomersView({ 
-    customers, 
-    loading, 
-    onAddPurchase, 
-    onAddPayment, 
-    onAddReminder, 
+function CustomersView({
+    customers,
+    loading,
+    onAddPurchase,
+    onAddPayment,
+    onAddReminder,
     onViewTransactions,
-    onDeleteCustomer, 
-    onToggleStatus, 
-    onDownloadLedger, 
-    searchTerm, 
-    onSearchChange, 
-    onRefresh, 
-    onNewCustomer 
+    onDeleteCustomer,
+    onToggleStatus,
+    onDownloadLedger,
+    searchTerm,
+    onSearchChange,
+    onRefresh,
+    onNewCustomer
 }) {
     const [activeCustomerTab, setActiveCustomerTab] = useState("all");
 
@@ -837,8 +1100,8 @@ function CustomersView({
                         { id: "due", name: "Due Balance", count: tabCounts.due, icon: CreditCard },
                         { id: "credit", name: "Credit Balance", count: tabCounts.credit, icon: DollarSign },
                     ].map((tab) => (
-                        <button 
-                            key={tab.id} 
+                        <button
+                            key={tab.id}
                             onClick={() => setActiveCustomerTab(tab.id)}
                             className={`flex items-center gap-2 px-6 py-4 border-b-2 font-medium text-sm transition-all duration-200 ${activeCustomerTab === tab.id ? "border-indigo-600 text-indigo-600 bg-indigo-50" : "border-transparent text-gray-500 hover:text-gray-700 hover:bg-gray-50"}`}
                         >
@@ -857,22 +1120,22 @@ function CustomersView({
                 <div className="flex flex-col sm:flex-row gap-4">
                     <div className="flex-1 relative">
                         <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                        <input 
-                            type="text" 
-                            placeholder="Search customers by name, ID, or phone..." 
-                            value={searchTerm} 
+                        <input
+                            type="text"
+                            placeholder="Search customers by name, ID, or phone..."
+                            value={searchTerm}
                             onChange={(e) => onSearchChange(e.target.value)}
-                            className="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-indigo-200 focus:border-indigo-500 outline-none transition-all duration-200 bg-white" 
+                            className="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-indigo-200 focus:border-indigo-500 outline-none transition-all duration-200 bg-white"
                         />
                     </div>
-                    <button 
-                        onClick={onRefresh} 
+                    <button
+                        onClick={onRefresh}
                         className="px-4 py-3 bg-white border border-gray-300 hover:border-gray-400 rounded-xl text-gray-700 font-medium transition-all duration-200 flex items-center gap-2"
                     >
                         <RefreshCw className="w-4 h-4" />Refresh
                     </button>
-                    <button 
-                        onClick={onNewCustomer} 
+                    <button
+                        onClick={onNewCustomer}
                         className="px-4 py-3 bg-indigo-600 hover:bg-indigo-700 rounded-xl text-white font-medium transition-all duration-200 flex items-center gap-2"
                     >
                         <UserPlus className="w-4 h-4" />New Customer
@@ -899,16 +1162,16 @@ function CustomersView({
                         </thead>
                         <tbody className="divide-y divide-gray-200 bg-white">
                             {filteredCustomers.map((customer) => (
-                                <CustomerRow 
-                                    key={customer._id} 
-                                    customer={customer} 
-                                    onAddPurchase={onAddPurchase} 
-                                    onAddPayment={onAddPayment} 
-                                    onAddReminder={onAddReminder} 
+                                <CustomerRow
+                                    key={customer._id}
+                                    customer={customer}
+                                    onAddPurchase={onAddPurchase}
+                                    onAddPayment={onAddPayment}
+                                    onAddReminder={onAddReminder}
                                     onViewTransactions={onViewTransactions}
-                                    onDelete={onDeleteCustomer} 
-                                    onToggleStatus={onToggleStatus} 
-                                    onDownloadLedger={onDownloadLedger} 
+                                    onDelete={onDeleteCustomer}
+                                    onToggleStatus={onToggleStatus}
+                                    onDownloadLedger={onDownloadLedger}
                                 />
                             ))}
                         </tbody>
@@ -1002,22 +1265,22 @@ function CustomerRow({ customer, onAddPurchase, onAddPayment, onAddReminder, onV
 
             <td className="px-6 py-4">
                 <div className="flex items-center gap-2">
-                    <button 
-                        onClick={() => onAddPurchase(customer)} 
+                    <button
+                        onClick={() => onAddPurchase(customer)}
                         className="inline-flex items-center gap-1 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors duration-200"
                     >
                         <ShoppingCart className="w-4 h-4" />Purchase
                     </button>
-                    <button 
-                        onClick={() => onAddPayment(customer)} 
+                    <button
+                        onClick={() => onAddPayment(customer)}
                         className="inline-flex items-center gap-1 px-3 py-1.5 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded-lg transition-colors duration-200"
                     >
                         <CreditCard className="w-4 h-4" />Payment
                     </button>
 
                     <div className="relative">
-                        <button 
-                            onClick={() => setShowDropdown(!showDropdown)} 
+                        <button
+                            onClick={() => setShowDropdown(!showDropdown)}
                             className="p-1.5 text-gray-400 hover:text-gray-600 transition-colors duration-200"
                         >
                             <MoreVertical className="w-4 h-4" />
@@ -1025,33 +1288,33 @@ function CustomerRow({ customer, onAddPurchase, onAddPayment, onAddReminder, onV
 
                         {showDropdown && (
                             <div className="absolute right-0 top-full mt-1 w-48 bg-white rounded-lg shadow-lg border border-gray-200 z-10">
-                                <button 
-                                    onClick={() => { onViewTransactions(customer); setShowDropdown(false); }} 
+                                <button
+                                    onClick={() => { onViewTransactions(customer); setShowDropdown(false); }}
                                     className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"
                                 >
                                     <FileText className="w-4 h-4" />View Transactions
                                 </button>
-                                <button 
-                                    onClick={() => { onAddReminder(customer); setShowDropdown(false); }} 
+                                <button
+                                    onClick={() => { onAddReminder(customer); setShowDropdown(false); }}
                                     className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"
                                 >
                                     <Calendar className="w-4 h-4" />Add Reminder
                                 </button>
-                                <button 
-                                    onClick={() => { onDownloadLedger(customer._id); setShowDropdown(false); }} 
+                                <button
+                                    onClick={() => { onDownloadLedger(customer._id); setShowDropdown(false); }}
                                     className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"
                                 >
                                     <Download className="w-4 h-4" />Download Ledger
                                 </button>
-                                <button 
-                                    onClick={() => { onToggleStatus(customer._id, customer.isActive); setShowDropdown(false); }} 
+                                <button
+                                    onClick={() => { onToggleStatus(customer._id, customer.isActive); setShowDropdown(false); }}
                                     className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"
                                 >
                                     {customer.isActive ? <XCircle className="w-4 h-4" /> : <CheckCircle className="w-4 h-4" />}
                                     {customer.isActive ? 'Deactivate' : 'Activate'}
                                 </button>
-                                <button 
-                                    onClick={() => { onDelete(customer._id); setShowDropdown(false); }} 
+                                <button
+                                    onClick={() => { onDelete(customer._id); setShowDropdown(false); }}
                                     className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-2"
                                 >
                                     <Trash2 className="w-4 h-4" />Delete
@@ -1074,14 +1337,14 @@ function InventoryView({ inventory, loading, onRefresh, onNewInventory, onStockP
                         <h3 className="text-lg font-semibold text-gray-800">Inventory Management</h3>
                         <p className="text-sm text-gray-600">Manage your stock and track inventory levels</p>
                     </div>
-                    <button 
-                        onClick={onRefresh} 
+                    <button
+                        onClick={onRefresh}
                         className="px-4 py-3 bg-white border border-gray-300 hover:border-gray-400 rounded-xl text-gray-700 font-medium transition-all duration-200 flex items-center gap-2"
                     >
                         <RefreshCw className="w-4 h-4" />Refresh
                     </button>
-                    <button 
-                        onClick={onNewInventory} 
+                    <button
+                        onClick={onNewInventory}
                         className="px-4 py-3 bg-green-600 hover:bg-green-700 rounded-xl text-white font-medium transition-all duration-200 flex items-center gap-2"
                     >
                         <Plus className="w-4 h-4" />Add Inventory
@@ -1160,12 +1423,110 @@ function InventoryRow({ item, onStockPurchase }) {
                 </span>
             </td>
             <td className="px-6 py-4">
-                <button 
-                    onClick={() => onStockPurchase(item)} 
+                <button
+                    onClick={() => onStockPurchase(item)}
                     className="inline-flex items-center gap-1 px-3 py-1.5 bg-orange-600 hover:bg-orange-700 text-white text-sm font-medium rounded-lg transition-colors duration-200"
                 >
                     <Truck className="w-4 h-4" />Add Stock
                 </button>
+            </td>
+        </tr>
+    );
+}
+
+function CommissionCandidatesView({ candidates, onRefresh, onNewCandidate }) {
+    return (
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
+            <div className="p-6 border-b border-gray-200 bg-gray-50/50">
+                <div className="flex flex-col sm:flex-row gap-4">
+                    <div className="flex-1">
+                        <h3 className="text-lg font-semibold text-gray-800">Commission Candidates</h3>
+                        <p className="text-sm text-gray-600">Manage commission candidates (exporter, delivery, etc.)</p>
+                    </div>
+                    <button
+                        onClick={onRefresh}
+                        className="px-4 py-3 bg-white border border-gray-300 hover:border-gray-400 rounded-xl text-gray-700 font-medium transition-all duration-200 flex items-center gap-2"
+                    >
+                        <RefreshCw className="w-4 h-4" />Refresh
+                    </button>
+                    <button
+                        onClick={onNewCandidate}
+                        className="px-4 py-3 bg-purple-600 hover:bg-purple-700 rounded-xl text-white font-medium transition-all duration-200 flex items-center gap-2"
+                    >
+                        <User className="w-4 h-4" />Add Candidate
+                    </button>
+                </div>
+            </div>
+
+            <div className="overflow-x-auto">
+                {candidates.length === 0 ? (
+                    <EmptyState message="No commission candidates found" />
+                ) : (
+                    <table className="w-full">
+                        <thead className="bg-gray-50">
+                            <tr>
+                                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Candidate</th>
+                                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Type</th>
+                                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Commission Rate</th>
+                                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Contact</th>
+                                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody className="divide-y divide-gray-200 bg-white">
+                            {candidates.map((candidate) => (
+                                <CommissionCandidateRow key={candidate._id} candidate={candidate} />
+                            ))}
+                        </tbody>
+                    </table>
+                )}
+            </div>
+        </div>
+    );
+}
+
+function CommissionCandidateRow({ candidate }) {
+    const getTypeColor = (type) => {
+        switch (type) {
+            case 'exporter': return 'bg-blue-100 text-blue-800';
+            case 'delivery': return 'bg-green-100 text-green-800';
+            case 'agent': return 'bg-purple-100 text-purple-800';
+            case 'broker': return 'bg-amber-100 text-amber-800';
+            default: return 'bg-gray-100 text-gray-800';
+        }
+    };
+
+    return (
+        <tr className="hover:bg-gray-50 transition-colors duration-150">
+            <td className="px-6 py-4">
+                <div className="flex items-start gap-3">
+                    <div className="w-10 h-10 bg-purple-50 rounded-lg flex items-center justify-center flex-shrink-0">
+                        <User className="w-5 h-5 text-purple-600" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                        <h3 className="font-semibold text-gray-900">{candidate.name}</h3>
+                        <p className="text-xs text-gray-500 mt-2">
+                            Added: {new Date(candidate.createdAt).toLocaleDateString()}
+                        </p>
+                    </div>
+                </div>
+            </td>
+            <td className="px-6 py-4">
+                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getTypeColor(candidate.type)}`}>
+                    {candidate.type}
+                </span>
+            </td>
+            <td className="px-6 py-4">
+                <span className="font-semibold text-gray-900">{candidate.commissionRate}%</span>
+            </td>
+            <td className="px-6 py-4">
+                <div className="text-sm text-gray-600">
+                    {candidate.contactNumber || 'N/A'}
+                </div>
+            </td>
+            <td className="px-6 py-4">
+                <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium ${candidate.isActive ? "bg-green-100 text-green-800" : "bg-gray-100 text-gray-800"}`}>
+                    {candidate.isActive ? <><CheckCircle className="w-3 h-3" />Active</> : <><XCircle className="w-3 h-3" />Inactive</>}
+                </span>
             </td>
         </tr>
     );
@@ -1179,6 +1540,7 @@ function ReportsView({ profitLossReport, customers, inventory, period, onPeriodC
         totalExpenses = 0,
         totalCommissions = 0,
         totalDamages = 0,
+        totalPurchaseCommission = 0,
         netProfit = 0
     } = profitLossReport;
 
@@ -1192,6 +1554,7 @@ function ReportsView({ profitLossReport, customers, inventory, period, onPeriodC
 
     const profitMargin = grossProfit > 0 && totalRevenue > 0 ? ((grossProfit / totalRevenue) * 100) : 0;
     const expenseRatio = totalRevenue > 0 ? ((totalExpenses / totalRevenue) * 100) : 0;
+    const commissionRatio = totalRevenue > 0 ? ((totalPurchaseCommission / totalRevenue) * 100) : 0;
 
     return (
         <div className="space-y-6">
@@ -1201,8 +1564,8 @@ function ReportsView({ profitLossReport, customers, inventory, period, onPeriodC
                     <h3 className="text-lg font-semibold text-gray-800">Financial Reports</h3>
                     <div className="flex items-center gap-2">
                         <label className="text-sm font-medium text-gray-700">Period:</label>
-                        <select 
-                            value={period} 
+                        <select
+                            value={period}
                             onChange={(e) => onPeriodChange(e.target.value)}
                             className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-200 focus:border-indigo-500 outline-none"
                         >
@@ -1232,13 +1595,17 @@ function ReportsView({ profitLossReport, customers, inventory, period, onPeriodC
                             <span className="font-medium text-gray-700">Gross Profit</span>
                             <span className="font-bold text-green-600">{formatCurrency(grossProfit)}</span>
                         </div>
+                        <div className="flex justify-between items-center p-3 bg-purple-50 rounded-lg">
+                            <span className="font-medium text-gray-700">Purchase Commission</span>
+                            <span className="font-bold text-purple-600">{formatCurrency(totalPurchaseCommission)}</span>
+                        </div>
                         <div className="flex justify-between items-center p-3 bg-orange-50 rounded-lg">
                             <span className="font-medium text-gray-700">Total Expenses</span>
                             <span className="font-bold text-orange-600">{formatCurrency(totalExpenses)}</span>
                         </div>
-                        <div className="flex justify-between items-center p-3 bg-purple-50 rounded-lg">
-                            <span className="font-medium text-gray-700">Commissions</span>
-                            <span className="font-bold text-purple-600">{formatCurrency(totalCommissions)}</span>
+                        <div className="flex justify-between items-center p-3 bg-indigo-50 rounded-lg">
+                            <span className="font-medium text-gray-700">Commissions Received</span>
+                            <span className="font-bold text-indigo-600">{formatCurrency(totalCommissions)}</span>
                         </div>
                         <div className="flex justify-between items-center p-3 bg-amber-50 rounded-lg">
                             <span className="font-medium text-gray-700">Damages/Losses</span>
@@ -1301,8 +1668,8 @@ function ReportsView({ profitLossReport, customers, inventory, period, onPeriodC
                     <div className="grid grid-cols-2 gap-4">
                         <StatCard title="Profit Margin" value={`${profitMargin.toFixed(1)}%`} change="+2.1%" trend="up" />
                         <StatCard title="Expense Ratio" value={`${expenseRatio.toFixed(1)}%`} change="-0.5%" trend="down" />
+                        <StatCard title="Commission Ratio" value={`${commissionRatio.toFixed(1)}%`} change="+0.3%" trend="neutral" />
                         <StatCard title="Active Rate" value={`${totalCustomers > 0 ? Math.round((activeCustomers / totalCustomers) * 100) : 0}%`} change="+2%" trend="up" />
-                        <StatCard title="Collection Rate" value={`${totalPurchases > 0 ? Math.round(((totalPurchases - totalDueAmount) / totalPurchases) * 100) : 0}%`} change="+1.2%" trend="up" />
                     </div>
                 </div>
             </div>
@@ -1329,59 +1696,59 @@ function CustomerModal({ show, onClose, form, setForm, onSubmit, loading }) {
                     <div className="space-y-4">
                         <div>
                             <label className="block text-sm font-semibold text-gray-700 mb-2">Customer Name *</label>
-                            <input 
-                                type="text" 
-                                value={form.name} 
-                                onChange={(e) => setForm({ ...form, name: e.target.value })} 
-                                placeholder="Enter customer name" 
-                                className="w-full p-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-indigo-200 focus:border-indigo-500 outline-none transition-all duration-200" 
+                            <input
+                                type="text"
+                                value={form.name}
+                                onChange={(e) => setForm({ ...form, name: e.target.value })}
+                                placeholder="Enter customer name"
+                                className="w-full p-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-indigo-200 focus:border-indigo-500 outline-none transition-all duration-200"
                             />
                         </div>
 
                         <div>
                             <label className="block text-sm font-semibold text-gray-700 mb-2">Phone Number *</label>
-                            <input 
-                                type="tel" 
-                                value={form.phone} 
-                                onChange={(e) => setForm({ ...form, phone: e.target.value })} 
-                                placeholder="Enter phone number" 
-                                className="w-full p-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-indigo-200 focus:border-indigo-500 outline-none transition-all duration-200" 
+                            <input
+                                type="tel"
+                                value={form.phone}
+                                onChange={(e) => setForm({ ...form, phone: e.target.value })}
+                                placeholder="Enter phone number"
+                                className="w-full p-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-indigo-200 focus:border-indigo-500 outline-none transition-all duration-200"
                             />
                         </div>
 
                         <div>
                             <label className="block text-sm font-semibold text-gray-700 mb-2">Email (Optional)</label>
-                            <input 
-                                type="email" 
-                                value={form.email} 
-                                onChange={(e) => setForm({ ...form, email: e.target.value })} 
-                                placeholder="Enter email address" 
-                                className="w-full p-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-indigo-200 focus:border-indigo-500 outline-none transition-all duration-200" 
+                            <input
+                                type="email"
+                                value={form.email}
+                                onChange={(e) => setForm({ ...form, email: e.target.value })}
+                                placeholder="Enter email address"
+                                className="w-full p-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-indigo-200 focus:border-indigo-500 outline-none transition-all duration-200"
                             />
                         </div>
 
                         <div>
                             <label className="block text-sm font-semibold text-gray-700 mb-2">Address</label>
-                            <textarea 
-                                value={form.address} 
-                                onChange={(e) => setForm({ ...form, address: e.target.value })} 
-                                placeholder="Enter customer address" 
-                                rows="3" 
-                                className="w-full p-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-indigo-200 focus:border-indigo-500 outline-none transition-all duration-200 resize-none" 
+                            <textarea
+                                value={form.address}
+                                onChange={(e) => setForm({ ...form, address: e.target.value })}
+                                placeholder="Enter customer address"
+                                rows="3"
+                                className="w-full p-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-indigo-200 focus:border-indigo-500 outline-none transition-all duration-200 resize-none"
                             />
                         </div>
                     </div>
 
                     <div className="flex gap-3 mt-6">
-                        <button 
-                            onClick={onClose} 
+                        <button
+                            onClick={onClose}
                             className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 py-3 px-4 rounded-xl font-semibold transition-all duration-200"
                         >
                             Cancel
                         </button>
-                        <button 
-                            onClick={onSubmit} 
-                            disabled={loading || !form.name || !form.phone} 
+                        <button
+                            onClick={onSubmit}
+                            disabled={loading || !form.name || !form.phone}
                             className="flex-1 bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-400 text-white py-3 px-4 rounded-xl font-semibold transition-all duration-200 flex items-center justify-center gap-2 disabled:cursor-not-allowed"
                         >
                             {loading ? <><RefreshCw className="w-4 h-4 animate-spin" />Creating...</> : <><UserPlus className="w-4 h-4" />Create Account</>}
@@ -1393,13 +1760,19 @@ function CustomerModal({ show, onClose, form, setForm, onSubmit, loading }) {
     );
 }
 
-function PurchaseModal({ show, onClose, customer, inventory, form, setForm, onSubmit, loading }) {
-    const remainingBalance = form.totalAmount - (parseFloat(form.paidAmount) || 0);
+function PurchaseModal({ show, onClose, customer, inventory, commissionCandidates, form, setForm, onSubmit, loading }) {
+    const remainingBalance = form.finalAmount - (parseFloat(form.paidAmount) || 0);
 
     const handleAddItem = () => {
         setForm(prev => ({
             ...prev,
-            items: [...prev.items, { inventoryId: "", quantity: "", unit: "kg", sellingPrice: "" }]
+            items: [...prev.items, {
+                inventoryId: "",
+                quantity: "",
+                unit: "kg",
+                sellingPrice: "",
+                itemCommissionCandidates: []
+            }]
         }));
     };
 
@@ -1415,16 +1788,67 @@ function PurchaseModal({ show, onClose, customer, inventory, form, setForm, onSu
         setForm(prev => {
             const updatedItems = [...prev.items];
             updatedItems[index] = { ...updatedItems[index], [field]: value };
-            
-            // Recalculate total amount
-            const totalAmount = updatedItems.reduce((sum, item) => {
-                if (item.quantity && item.sellingPrice) {
-                    return sum + (parseFloat(item.quantity) * parseFloat(item.sellingPrice));
-                }
-                return sum;
-            }, 0);
+            return { ...prev, items: updatedItems };
+        });
+    };
 
-            return { ...prev, items: updatedItems, totalAmount };
+    const handleAddItemCommission = (itemIndex) => {
+        setForm(prev => {
+            const updatedItems = [...prev.items];
+            updatedItems[itemIndex] = {
+                ...updatedItems[itemIndex],
+                itemCommissionCandidates: [
+                    ...(updatedItems[itemIndex].itemCommissionCandidates || []),
+                    { candidate: "", commissionRate: "" }
+                ]
+            };
+            return { ...prev, items: updatedItems };
+        });
+    };
+
+    const handleRemoveItemCommission = (itemIndex, commissionIndex) => {
+        setForm(prev => {
+            const updatedItems = [...prev.items];
+            updatedItems[itemIndex] = {
+                ...updatedItems[itemIndex],
+                itemCommissionCandidates: updatedItems[itemIndex].itemCommissionCandidates.filter((_, i) => i !== commissionIndex)
+            };
+            return { ...prev, items: updatedItems };
+        });
+    };
+
+    const handleItemCommissionChange = (itemIndex, commissionIndex, field, value) => {
+        setForm(prev => {
+            const updatedItems = [...prev.items];
+            const updatedCommissions = [...updatedItems[itemIndex].itemCommissionCandidates];
+            updatedCommissions[commissionIndex] = { ...updatedCommissions[commissionIndex], [field]: value };
+            updatedItems[itemIndex].itemCommissionCandidates = updatedCommissions;
+            return { ...prev, items: updatedItems };
+        });
+    };
+
+    const handleAddPurchaseCommission = () => {
+        setForm(prev => ({
+            ...prev,
+            commissionCandidates: [
+                ...prev.commissionCandidates,
+                { candidate: "", commissionRate: "" }
+            ]
+        }));
+    };
+
+    const handleRemovePurchaseCommission = (index) => {
+        setForm(prev => ({
+            ...prev,
+            commissionCandidates: prev.commissionCandidates.filter((_, i) => i !== index)
+        }));
+    };
+
+    const handlePurchaseCommissionChange = (index, field, value) => {
+        setForm(prev => {
+            const updatedCommissions = [...prev.commissionCandidates];
+            updatedCommissions[index] = { ...updatedCommissions[index], [field]: value };
+            return { ...prev, commissionCandidates: updatedCommissions };
         });
     };
 
@@ -1432,7 +1856,7 @@ function PurchaseModal({ show, onClose, customer, inventory, form, setForm, onSu
 
     return (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 overflow-y-auto">
-            <div className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full my-8">
+            <div className="bg-white rounded-2xl shadow-2xl max-w-5xl w-full my-8">
                 <div className="p-6">
                     <div className="flex items-center justify-between mb-6">
                         <h2 className="text-xl font-bold text-gray-800 flex items-center gap-2">
@@ -1456,8 +1880,8 @@ function PurchaseModal({ show, onClose, customer, inventory, form, setForm, onSu
                     <div className="space-y-4 mb-6">
                         <div className="flex items-center justify-between">
                             <h3 className="text-lg font-semibold text-gray-800">Purchase Items</h3>
-                            <button 
-                                onClick={handleAddItem} 
+                            <button
+                                onClick={handleAddItem}
                                 className="flex items-center gap-2 px-3 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded-lg transition-colors duration-200"
                             >
                                 <Plus className="w-4 h-4" />Add Item
@@ -1469,8 +1893,8 @@ function PurchaseModal({ show, onClose, customer, inventory, form, setForm, onSu
                                 <div className="flex items-center justify-between mb-3">
                                     <h4 className="font-medium text-gray-700">Item {index + 1}</h4>
                                     {form.items.length > 1 && (
-                                        <button 
-                                            onClick={() => handleRemoveItem(index)} 
+                                        <button
+                                            onClick={() => handleRemoveItem(index)}
                                             className="text-red-500 hover:text-red-700 transition-colors"
                                         >
                                             <XCircle className="w-5 h-5" />
@@ -1481,9 +1905,9 @@ function PurchaseModal({ show, onClose, customer, inventory, form, setForm, onSu
                                 <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                                     <div>
                                         <label className="block text-sm font-medium text-gray-700 mb-1">Product *</label>
-                                        <select 
-                                            value={item.inventoryId} 
-                                            onChange={(e) => handleItemChange(index, 'inventoryId', e.target.value)} 
+                                        <select
+                                            value={item.inventoryId}
+                                            onChange={(e) => handleItemChange(index, 'inventoryId', e.target.value)}
                                             className="w-full p-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-200 focus:border-blue-500 outline-none transition-all duration-200"
                                         >
                                             <option value="">Select Product</option>
@@ -1497,22 +1921,22 @@ function PurchaseModal({ show, onClose, customer, inventory, form, setForm, onSu
 
                                     <div>
                                         <label className="block text-sm font-medium text-gray-700 mb-1">Quantity *</label>
-                                        <input 
-                                            type="number" 
-                                            value={item.quantity} 
-                                            onChange={(e) => handleItemChange(index, 'quantity', e.target.value)} 
-                                            placeholder="0" 
-                                            step="0.01" 
-                                            min="0" 
-                                            className="w-full p-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-200 focus:border-blue-500 outline-none transition-all duration-200" 
+                                        <input
+                                            type="number"
+                                            value={item.quantity}
+                                            onChange={(e) => handleItemChange(index, 'quantity', e.target.value)}
+                                            placeholder="0"
+                                            step="0.01"
+                                            min="0"
+                                            className="w-full p-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-200 focus:border-blue-500 outline-none transition-all duration-200"
                                         />
                                     </div>
 
                                     <div>
                                         <label className="block text-sm font-medium text-gray-700 mb-1">Unit</label>
-                                        <select 
-                                            value={item.unit} 
-                                            onChange={(e) => handleItemChange(index, 'unit', e.target.value)} 
+                                        <select
+                                            value={item.unit}
+                                            onChange={(e) => handleItemChange(index, 'unit', e.target.value)}
                                             className="w-full p-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-200 focus:border-blue-500 outline-none transition-all duration-200"
                                         >
                                             <option value="kg">kg</option>
@@ -1525,16 +1949,104 @@ function PurchaseModal({ show, onClose, customer, inventory, form, setForm, onSu
 
                                     <div>
                                         <label className="block text-sm font-medium text-gray-700 mb-1">Selling Price (₹) *</label>
-                                        <input 
-                                            type="number" 
-                                            value={item.sellingPrice} 
-                                            onChange={(e) => handleItemChange(index, 'sellingPrice', e.target.value)} 
-                                            placeholder="0" 
-                                            step="0.01" 
-                                            min="0" 
-                                            className="w-full p-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-200 focus:border-blue-500 outline-none transition-all duration-200" 
+                                        <input
+                                            type="number"
+                                            value={item.sellingPrice}
+                                            onChange={(e) => handleItemChange(index, 'sellingPrice', e.target.value)}
+                                            placeholder="0"
+                                            step="0.01"
+                                            min="0"
+                                            className="w-full p-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-200 focus:border-blue-500 outline-none transition-all duration-200"
                                         />
                                     </div>
+                                </div>
+
+                                {/* Item-level Commission */}
+                                <div className="mt-4 border-t border-gray-200 pt-4">
+                                    <div className="flex items-center justify-between mb-3">
+                                        <h5 className="text-sm font-medium text-gray-700">Item Commission (Optional)</h5>
+                                        <button
+                                            type="button"
+                                            onClick={() => handleAddItemCommission(index)}
+                                            className="flex items-center gap-1 px-2 py-1 bg-purple-100 hover:bg-purple-200 text-purple-700 text-xs font-medium rounded-lg transition-colors duration-200"
+                                        >
+                                            <Plus className="w-3 h-3" /> Add Commission
+                                        </button>
+                                    </div>
+
+                                    {item.itemCommissionCandidates && item.itemCommissionCandidates.length > 0 ? (
+                                        <div className="space-y-2">
+                                            {item.itemCommissionCandidates.map((commission, commissionIndex) => (
+                                                <div key={commissionIndex} className="flex flex-wrap items-center gap-2 p-3 bg-purple-50 rounded-lg">
+                                                    {/* Commission Type Dropdown */}
+                                                    <select
+                                                        value={commission.candidateType || ""}
+                                                        onChange={(e) => handleItemCommissionChange(index, commissionIndex, 'candidateType', e.target.value)}
+                                                        className="flex-1 min-w-[150px] p-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-purple-200 focus:border-purple-500 outline-none transition-all duration-200 text-sm"
+                                                    >
+                                                        <option value="">Select Commission Type</option>
+                                                        {commissionTypes.map(type => (
+                                                            <option key={type.id} value={type.id}>
+                                                                {type.name}
+                                                            </option>
+                                                        ))}
+                                                    </select>
+
+                                                    {/* Other Candidate Input (shown only when type is 'other') */}
+                                                    {commission.candidateType === 'other' && (
+                                                        <input
+                                                            type="text"
+                                                            value={commission.otherCandidate || ""}
+                                                            onChange={(e) => handleItemCommissionChange(index, commissionIndex, 'otherCandidate', e.target.value)}
+                                                            placeholder="Enter custom type"
+                                                            className="flex-1 min-w-[150px] p-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-purple-200 focus:border-purple-500 outline-none transition-all duration-200 text-sm"
+                                                        />
+                                                    )}
+
+                                                    {/* Commission Method (INR or %) */}
+                                                    <select
+                                                        value={commission.commissionMethod || "percentage"}
+                                                        onChange={(e) => handleItemCommissionChange(index, commissionIndex, 'commissionMethod', e.target.value)}
+                                                        className="w-20 p-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-purple-200 focus:border-purple-500 outline-none transition-all duration-200 text-sm"
+                                                    >
+                                                        {commissionMethods.map(method => (
+                                                            <option key={method.id} value={method.id}>
+                                                                {method.name}
+                                                            </option>
+                                                        ))}
+                                                    </select>
+
+                                                    {/* Commission Value */}
+                                                    <div className="flex items-center gap-1">
+                                                        <input
+                                                            type="number"
+                                                            value={commission.commissionValue || ""}
+                                                            onChange={(e) => handleItemCommissionChange(index, commissionIndex, 'commissionValue', e.target.value)}
+                                                            placeholder={commission.commissionMethod === 'percentage' ? "%" : "₹"}
+                                                            step={commission.commissionMethod === 'percentage' ? "0.1" : "0.01"}
+                                                            min="0"
+                                                            max={commission.commissionMethod === 'percentage' ? "100" : undefined}
+                                                            className="w-24 p-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-purple-200 focus:border-purple-500 outline-none transition-all duration-200 text-sm"
+                                                        />
+                                                        {commission.commissionMethod === 'percentage' && (
+                                                            <span className="text-gray-500 text-sm">%</span>
+                                                        )}
+                                                    </div>
+
+                                                    {/* Remove Button */}
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => handleRemoveItemCommission(index, commissionIndex)}
+                                                        className="text-red-500 hover:text-red-700 transition-colors p-1"
+                                                    >
+                                                        <Trash2 className="w-4 h-4" />
+                                                    </button>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    ) : (
+                                        <p className="text-xs text-gray-500 text-center py-2">No commission added for this item</p>
+                                    )}
                                 </div>
 
                                 {item.inventoryId && (
@@ -1543,42 +2055,138 @@ function PurchaseModal({ show, onClose, customer, inventory, form, setForm, onSu
                                             <strong>Cost Price:</strong> {formatCurrency(inventory.find(inv => inv._id === item.inventoryId)?.costPrice)} per {item.unit}
                                             {item.quantity && item.sellingPrice && (
                                                 <span className="ml-4">
-                                                    <strong>Profit:</strong> {formatCurrency(item.quantity * (parseFloat(item.sellingPrice) - (inventory.find(inv => inv._id === item.inventoryId)?.costPrice || 0)))}
+                                                    <strong>Item Total:</strong> {formatCurrency(item.quantity * item.sellingPrice)}
                                                 </span>
                                             )}
                                         </div>
                                     </div>
                                 )}
+
                             </div>
                         ))}
                     </div>
 
+                    {/* Purchase-level Commission */}
+                    <div className="border border-gray-200 rounded-xl p-4 bg-white mb-6">
+                        <div className="flex items-center justify-between mb-4">
+                            <h3 className="text-lg font-semibold text-gray-800">Purchase Commission (Optional)</h3>
+                            <button
+                                onClick={handleAddPurchaseCommission}
+                                className="flex items-center gap-2 px-3 py-2 bg-purple-600 hover:bg-purple-700 text-white text-sm font-medium rounded-lg transition-colors duration-200"
+                            >
+                                <Plus className="w-4 h-4" /> Add Commission
+                            </button>
+                        </div>
+
+                        {form.commissionCandidates.length > 0 ? (
+                            <div className="space-y-3">
+                                {form.commissionCandidates.map((commission, index) => (
+                                    <div key={index} className="flex flex-wrap items-center gap-3 p-3 bg-purple-50 rounded-lg">
+                                        {/* Commission Type Dropdown */}
+                                        <select
+                                            value={commission.candidateType || ""}
+                                            onChange={(e) => handlePurchaseCommissionChange(index, 'candidateType', e.target.value)}
+                                            className="flex-1 min-w-[150px] p-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-purple-200 focus:border-purple-500 outline-none transition-all duration-200"
+                                        >
+                                            <option value="">Select Commission Type</option>
+                                            {commissionTypes.map(type => (
+                                                <option key={type.id} value={type.id}>
+                                                    {type.name}
+                                                </option>
+                                            ))}
+                                        </select>
+
+                                        {/* Other Candidate Input (shown only when type is 'other') */}
+                                        {commission.candidateType === 'other' && (
+                                            <input
+                                                type="text"
+                                                value={commission.otherCandidate || ""}
+                                                onChange={(e) => handlePurchaseCommissionChange(index, 'otherCandidate', e.target.value)}
+                                                placeholder="Enter custom type"
+                                                className="flex-1 min-w-[150px] p-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-purple-200 focus:border-purple-500 outline-none transition-all duration-200"
+                                            />
+                                        )}
+
+                                        {/* Commission Method (INR or %) */}
+                                        <select
+                                            value={commission.commissionMethod || "percentage"}
+                                            onChange={(e) => handlePurchaseCommissionChange(index, 'commissionMethod', e.target.value)}
+                                            className="w-20 p-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-purple-200 focus:border-purple-500 outline-none transition-all duration-200"
+                                        >
+                                            {commissionMethods.map(method => (
+                                                <option key={method.id} value={method.id}>
+                                                    {method.name}
+                                                </option>
+                                            ))}
+                                        </select>
+
+                                        {/* Commission Value */}
+                                        <div className="flex items-center gap-2">
+                                            <input
+                                                type="number"
+                                                value={commission.commissionValue || ""}
+                                                onChange={(e) => handlePurchaseCommissionChange(index, 'commissionValue', e.target.value)}
+                                                placeholder={commission.commissionMethod === 'percentage' ? "0.0" : "0.00"}
+                                                step={commission.commissionMethod === 'percentage' ? "0.1" : "0.01"}
+                                                min="0"
+                                                max={commission.commissionMethod === 'percentage' ? "100" : undefined}
+                                                className="w-24 p-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-purple-200 focus:border-purple-500 outline-none transition-all duration-200"
+                                            />
+                                            <span className="text-gray-500">
+                                                {commission.commissionMethod === 'percentage' ? '%' : '₹'}
+                                            </span>
+                                        </div>
+
+                                        {/* Remove Button */}
+                                        <button
+                                            type="button"
+                                            onClick={() => handleRemovePurchaseCommission(index)}
+                                            className="text-red-500 hover:text-red-700 transition-colors p-2"
+                                        >
+                                            <Trash2 className="w-4 h-4" />
+                                        </button>
+                                    </div>
+                                ))}
+                            </div>
+                        ) : (
+                            <p className="text-gray-500 text-center py-4">No commission added. This is optional.</p>
+                        )}
+                    </div>
                     {/* Summary Section */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
                         <div className="space-y-4">
                             <h3 className="text-lg font-semibold text-gray-800">Payment Details</h3>
 
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Total Amount</label>
-                                <input 
-                                    type="text" 
-                                    value={formatCurrency(form.totalAmount)} 
-                                    readOnly 
-                                    className="w-full p-3 rounded-xl border border-gray-300 bg-gray-50 font-bold text-lg" 
-                                />
+                            <div className="space-y-3">
+                                <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                                    <span className="font-medium text-gray-700">Sub Total:</span>
+                                    <span className="font-bold text-gray-900">{formatCurrency(form.totalAmount)}</span>
+                                </div>
+
+                                {form.totalCommission > 0 && (
+                                    <div className="flex justify-between items-center p-3 bg-purple-50 rounded-lg">
+                                        <span className="font-medium text-gray-700">Total Commission:</span>
+                                        <span className="font-bold text-purple-600">-{formatCurrency(form.totalCommission)}</span>
+                                    </div>
+                                )}
+
+                                <div className="flex justify-between items-center p-3 bg-blue-50 rounded-lg">
+                                    <span className="font-medium text-gray-700">Final Amount:</span>
+                                    <span className="font-bold text-blue-600">{formatCurrency(form.finalAmount)}</span>
+                                </div>
                             </div>
 
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-1">Paid Amount (₹) *</label>
-                                <input 
-                                    type="number" 
-                                    value={form.paidAmount} 
-                                    onChange={(e) => setForm({ ...form, paidAmount: e.target.value })} 
-                                    placeholder="0" 
-                                    step="0.01" 
-                                    min="0" 
-                                    max={form.totalAmount}
-                                    className="w-full p-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-blue-200 focus:border-blue-500 outline-none transition-all duration-200" 
+                                <input
+                                    type="number"
+                                    value={form.paidAmount}
+                                    onChange={(e) => setForm({ ...form, paidAmount: e.target.value })}
+                                    placeholder="0"
+                                    step="0.01"
+                                    min="0"
+                                    max={form.finalAmount}
+                                    className="w-full p-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-blue-200 focus:border-blue-500 outline-none transition-all duration-200"
                                 />
                             </div>
 
@@ -1598,30 +2206,30 @@ function PurchaseModal({ show, onClose, customer, inventory, form, setForm, onSu
                             <h3 className="text-lg font-semibold text-gray-800">Additional Information</h3>
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-1">Note (Optional)</label>
-                                <textarea 
-                                    value={form.note} 
-                                    onChange={(e) => setForm({ ...form, note: e.target.value })} 
-                                    placeholder="Add purchase details or remarks..." 
-                                    rows="4" 
-                                    className="w-full p-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-blue-200 focus:border-blue-500 outline-none transition-all duration-200 resize-none" 
+                                <textarea
+                                    value={form.note}
+                                    onChange={(e) => setForm({ ...form, note: e.target.value })}
+                                    placeholder="Add purchase details or remarks..."
+                                    rows="6"
+                                    className="w-full p-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-blue-200 focus:border-blue-500 outline-none transition-all duration-200 resize-none"
                                 />
                             </div>
                         </div>
                     </div>
 
                     <div className="flex gap-3 pt-6 border-t border-gray-200">
-                        <button 
-                            onClick={onClose} 
+                        <button
+                            onClick={onClose}
                             className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 py-3 px-4 rounded-xl font-semibold transition-all duration-200"
                         >
                             Cancel
                         </button>
-                        <button 
-                            onClick={onSubmit} 
-                            disabled={loading || form.totalAmount === 0 || !form.paidAmount || form.items.some(item => !item.inventoryId || !item.quantity || !item.sellingPrice)} 
+                        <button
+                            onClick={onSubmit}
+                            disabled={loading || form.finalAmount === 0 || !form.paidAmount || form.items.some(item => !item.inventoryId || !item.quantity || !item.sellingPrice)}
                             className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white py-3 px-4 rounded-xl font-semibold transition-all duration-200 flex items-center justify-center gap-2 disabled:cursor-not-allowed"
                         >
-                            {loading ? <><RefreshCw className="w-4 h-4 animate-spin" />Processing...</> : <><ShoppingCart className="w-4 h-4" />Add Purchase ({formatCurrency(form.totalAmount)})</>}
+                            {loading ? <><RefreshCw className="w-4 h-4 animate-spin" />Processing...</> : <><ShoppingCart className="w-4 h-4" />Add Purchase ({formatCurrency(form.finalAmount)})</>}
                         </button>
                     </div>
                 </div>
@@ -1630,6 +2238,97 @@ function PurchaseModal({ show, onClose, customer, inventory, form, setForm, onSu
     );
 }
 
+// Add the CommissionCandidateModal component
+function CommissionCandidateModal({ show, onClose, form, setForm, onSubmit, commissionTypes }) {
+    if (!show) return null;
+
+    return (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+            <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full">
+                <div className="p-6">
+                    <div className="flex items-center justify-between mb-4">
+                        <h2 className="text-xl font-bold text-gray-800 flex items-center gap-2">
+                            <User className="w-5 h-5 text-purple-600" />
+                            Add Commission Candidate
+                        </h2>
+                        <button onClick={onClose} className="text-gray-400 hover:text-gray-600 transition-colors p-1">✕</button>
+                    </div>
+
+                    <div className="space-y-4">
+                        <div>
+                            <label className="block text-sm font-semibold text-gray-700 mb-2">Name *</label>
+                            <input
+                                type="text"
+                                value={form.name}
+                                onChange={(e) => setForm({ ...form, name: e.target.value })}
+                                placeholder="Enter candidate name"
+                                className="w-full p-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-purple-200 focus:border-purple-500 outline-none transition-all duration-200"
+                            />
+                        </div>
+
+                        <div>
+                            <label className="block text-sm font-semibold text-gray-700 mb-2">Type *</label>
+                            <select
+                                value={form.type}
+                                onChange={(e) => setForm({ ...form, type: e.target.value })}
+                                className="w-full p-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-purple-200 focus:border-purple-500 outline-none transition-all duration-200"
+                            >
+                                {commissionTypes.map(type => (
+                                    <option key={type.id} value={type.id}>
+                                        {type.name}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+
+                        <div>
+                            <label className="block text-sm font-semibold text-gray-700 mb-2">Default Commission Rate (%)</label>
+                            <input
+                                type="number"
+                                value={form.commissionRate}
+                                onChange={(e) => setForm({ ...form, commissionRate: e.target.value })}
+                                placeholder="0"
+                                step="0.1"
+                                min="0"
+                                max="100"
+                                className="w-full p-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-purple-200 focus:border-purple-500 outline-none transition-all duration-200"
+                            />
+                        </div>
+
+                        <div>
+                            <label className="block text-sm font-semibold text-gray-700 mb-2">Contact Number</label>
+                            <input
+                                type="tel"
+                                value={form.contactNumber}
+                                onChange={(e) => setForm({ ...form, contactNumber: e.target.value })}
+                                placeholder="Enter contact number"
+                                className="w-full p-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-purple-200 focus:border-purple-500 outline-none transition-all duration-200"
+                            />
+                        </div>
+                    </div>
+
+                    <div className="flex gap-3 mt-6">
+                        <button
+                            onClick={onClose}
+                            className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 py-3 px-4 rounded-xl font-semibold transition-all duration-200"
+                        >
+                            Cancel
+                        </button>
+                        <button
+                            onClick={onSubmit}
+                            disabled={!form.name || !form.type}
+                            className="flex-1 bg-purple-600 hover:bg-purple-700 disabled:bg-gray-400 text-white py-3 px-4 rounded-xl font-semibold transition-all duration-200 flex items-center justify-center gap-2 disabled:cursor-not-allowed"
+                        >
+                            <User className="w-4 h-4" /> Add Candidate
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+}
+
+// Payment Modal (keep existing)
 function PaymentModal({ show, onClose, customer, form, setForm, onSubmit, loading }) {
     if (!show) return null;
 
@@ -1655,24 +2354,24 @@ function PaymentModal({ show, onClose, customer, form, setForm, onSubmit, loadin
                     <div className="space-y-4">
                         <div>
                             <label className="block text-sm font-semibold text-gray-700 mb-2">Amount (₹) *</label>
-                            <input 
-                                type="number" 
-                                value={form.amount} 
-                                onChange={(e) => setForm({ ...form, amount: e.target.value })} 
-                                placeholder="Enter amount" 
-                                step="0.01" 
-                                min="0" 
-                                max={customer?.currentBalance} 
-                                className="w-full p-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-green-200 focus:border-green-500 outline-none transition-all duration-200" 
+                            <input
+                                type="number"
+                                value={form.amount}
+                                onChange={(e) => setForm({ ...form, amount: e.target.value })}
+                                placeholder="Enter amount"
+                                step="0.01"
+                                min="0"
+                                max={customer?.currentBalance}
+                                className="w-full p-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-green-200 focus:border-green-500 outline-none transition-all duration-200"
                             />
                             <p className="text-xs text-gray-500 mt-1">Maximum: {formatCurrency(customer?.currentBalance || 0)}</p>
                         </div>
 
                         <div>
                             <label className="block text-sm font-semibold text-gray-700 mb-2">Payment Method</label>
-                            <select 
-                                value={form.paymentMethod} 
-                                onChange={(e) => setForm({ ...form, paymentMethod: e.target.value })} 
+                            <select
+                                value={form.paymentMethod}
+                                onChange={(e) => setForm({ ...form, paymentMethod: e.target.value })}
                                 className="w-full p-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-green-200 focus:border-green-500 outline-none transition-all duration-200"
                             >
                                 <option value="cash">Cash</option>
@@ -1684,26 +2383,26 @@ function PaymentModal({ show, onClose, customer, form, setForm, onSubmit, loadin
 
                         <div>
                             <label className="block text-sm font-semibold text-gray-700 mb-2">Note (Optional)</label>
-                            <textarea 
-                                value={form.note} 
-                                onChange={(e) => setForm({ ...form, note: e.target.value })} 
-                                placeholder="Add payment reference or remarks..." 
-                                rows="3" 
-                                className="w-full p-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-green-200 focus:border-green-500 outline-none transition-all duration-200 resize-none" 
+                            <textarea
+                                value={form.note}
+                                onChange={(e) => setForm({ ...form, note: e.target.value })}
+                                placeholder="Add payment reference or remarks..."
+                                rows="3"
+                                className="w-full p-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-green-200 focus:border-green-500 outline-none transition-all duration-200 resize-none"
                             />
                         </div>
                     </div>
 
                     <div className="flex gap-3 mt-6">
-                        <button 
-                            onClick={onClose} 
+                        <button
+                            onClick={onClose}
                             className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 py-3 px-4 rounded-xl font-semibold transition-all duration-200"
                         >
                             Cancel
                         </button>
-                        <button 
-                            onClick={onSubmit} 
-                            disabled={loading || !form.amount || parseFloat(form.amount) > (customer?.currentBalance || 0)} 
+                        <button
+                            onClick={onSubmit}
+                            disabled={loading || !form.amount || parseFloat(form.amount) > (customer?.currentBalance || 0)}
                             className="flex-1 bg-green-600 hover:bg-green-700 disabled:bg-gray-400 text-white py-3 px-4 rounded-xl font-semibold transition-all duration-200 flex items-center justify-center gap-2 disabled:cursor-not-allowed"
                         >
                             {loading ? <><RefreshCw className="w-4 h-4 animate-spin" />Processing...</> : <><CreditCard className="w-4 h-4" />Add Payment</>}
@@ -1715,6 +2414,7 @@ function PaymentModal({ show, onClose, customer, form, setForm, onSubmit, loadin
     );
 }
 
+// Inventory Modal (keep existing)
 function InventoryModal({ show, onClose, form, setForm, onSubmit, categories }) {
     if (!show) return null;
 
@@ -1733,20 +2433,20 @@ function InventoryModal({ show, onClose, form, setForm, onSubmit, categories }) 
                     <div className="space-y-4">
                         <div>
                             <label className="block text-sm font-semibold text-gray-700 mb-2">Product Name *</label>
-                            <input 
-                                type="text" 
-                                value={form.productName} 
-                                onChange={(e) => setForm({ ...form, productName: e.target.value })} 
-                                placeholder="Enter product name" 
-                                className="w-full p-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-green-200 focus:border-green-500 outline-none transition-all duration-200" 
+                            <input
+                                type="text"
+                                value={form.productName}
+                                onChange={(e) => setForm({ ...form, productName: e.target.value })}
+                                placeholder="Enter product name"
+                                className="w-full p-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-green-200 focus:border-green-500 outline-none transition-all duration-200"
                             />
                         </div>
 
                         <div>
                             <label className="block text-sm font-semibold text-gray-700 mb-2">Category *</label>
-                            <select 
-                                value={form.category} 
-                                onChange={(e) => setForm({ ...form, category: e.target.value })} 
+                            <select
+                                value={form.category}
+                                onChange={(e) => setForm({ ...form, category: e.target.value })}
                                 className="w-full p-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-green-200 focus:border-green-500 outline-none transition-all duration-200"
                             >
                                 {categories.map(cat => (
@@ -1758,22 +2458,22 @@ function InventoryModal({ show, onClose, form, setForm, onSubmit, categories }) 
                         <div className="grid grid-cols-2 gap-4">
                             <div>
                                 <label className="block text-sm font-semibold text-gray-700 mb-2">Current Stock</label>
-                                <input 
-                                    type="number" 
-                                    value={form.currentStock} 
-                                    onChange={(e) => setForm({ ...form, currentStock: e.target.value })} 
-                                    placeholder="0" 
-                                    step="0.01" 
-                                    min="0" 
-                                    className="w-full p-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-green-200 focus:border-green-500 outline-none transition-all duration-200" 
+                                <input
+                                    type="number"
+                                    value={form.currentStock}
+                                    onChange={(e) => setForm({ ...form, currentStock: e.target.value })}
+                                    placeholder="0"
+                                    step="0.01"
+                                    min="0"
+                                    className="w-full p-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-green-200 focus:border-green-500 outline-none transition-all duration-200"
                                 />
                             </div>
 
                             <div>
                                 <label className="block text-sm font-semibold text-gray-700 mb-2">Unit</label>
-                                <select 
-                                    value={form.unit} 
-                                    onChange={(e) => setForm({ ...form, unit: e.target.value })} 
+                                <select
+                                    value={form.unit}
+                                    onChange={(e) => setForm({ ...form, unit: e.target.value })}
                                     className="w-full p-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-green-200 focus:border-green-500 outline-none transition-all duration-200"
                                 >
                                     <option value="kg">kg</option>
@@ -1787,42 +2487,42 @@ function InventoryModal({ show, onClose, form, setForm, onSubmit, categories }) 
 
                         <div>
                             <label className="block text-sm font-semibold text-gray-700 mb-2">Cost Price (₹) *</label>
-                            <input 
-                                type="number" 
-                                value={form.costPrice} 
-                                onChange={(e) => setForm({ ...form, costPrice: e.target.value })} 
-                                placeholder="0" 
-                                step="0.01" 
-                                min="0" 
-                                className="w-full p-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-green-200 focus:border-green-500 outline-none transition-all duration-200" 
+                            <input
+                                type="number"
+                                value={form.costPrice}
+                                onChange={(e) => setForm({ ...form, costPrice: e.target.value })}
+                                placeholder="0"
+                                step="0.01"
+                                min="0"
+                                className="w-full p-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-green-200 focus:border-green-500 outline-none transition-all duration-200"
                             />
                         </div>
 
                         <div>
                             <label className="block text-sm font-semibold text-gray-700 mb-2">Minimum Stock Level</label>
-                            <input 
-                                type="number" 
-                                value={form.minStockLevel} 
-                                onChange={(e) => setForm({ ...form, minStockLevel: e.target.value })} 
-                                placeholder="0" 
-                                step="0.01" 
-                                min="0" 
-                                className="w-full p-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-green-200 focus:border-green-500 outline-none transition-all duration-200" 
+                            <input
+                                type="number"
+                                value={form.minStockLevel}
+                                onChange={(e) => setForm({ ...form, minStockLevel: e.target.value })}
+                                placeholder="0"
+                                step="0.01"
+                                min="0"
+                                className="w-full p-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-green-200 focus:border-green-500 outline-none transition-all duration-200"
                             />
                             <p className="text-xs text-gray-500 mt-1">Alert when stock falls below this level</p>
                         </div>
                     </div>
 
                     <div className="flex gap-3 mt-6">
-                        <button 
-                            onClick={onClose} 
+                        <button
+                            onClick={onClose}
                             className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 py-3 px-4 rounded-xl font-semibold transition-all duration-200"
                         >
                             Cancel
                         </button>
-                        <button 
-                            onClick={onSubmit} 
-                            disabled={!form.productName || !form.costPrice} 
+                        <button
+                            onClick={onSubmit}
+                            disabled={!form.productName || !form.costPrice}
                             className="flex-1 bg-green-600 hover:bg-green-700 disabled:bg-gray-400 text-white py-3 px-4 rounded-xl font-semibold transition-all duration-200 flex items-center justify-center gap-2 disabled:cursor-not-allowed"
                         >
                             <Plus className="w-4 h-4" /> Add Inventory
@@ -1834,7 +2534,7 @@ function InventoryModal({ show, onClose, form, setForm, onSubmit, categories }) 
     );
 }
 
-// Stock Purchase Modal
+// Stock Purchase Modal (keep existing)
 function StockPurchaseModal({ show, onClose, inventory, form, setForm, onSubmit }) {
     if (!show) return null;
 
@@ -1855,9 +2555,9 @@ function StockPurchaseModal({ show, onClose, inventory, form, setForm, onSubmit 
                     <div className="space-y-4">
                         <div>
                             <label className="block text-sm font-semibold text-gray-700 mb-2">Product *</label>
-                            <select 
-                                value={form.inventoryId} 
-                                onChange={(e) => setForm({ ...form, inventoryId: e.target.value })} 
+                            <select
+                                value={form.inventoryId}
+                                onChange={(e) => setForm({ ...form, inventoryId: e.target.value })}
                                 className="w-full p-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-orange-200 focus:border-orange-500 outline-none transition-all duration-200"
                             >
                                 <option value="">Select Product</option>
@@ -1871,34 +2571,34 @@ function StockPurchaseModal({ show, onClose, inventory, form, setForm, onSubmit 
 
                         <div>
                             <label className="block text-sm font-semibold text-gray-700 mb-2">Supplier *</label>
-                            <input 
-                                type="text" 
-                                value={form.supplier} 
-                                onChange={(e) => setForm({ ...form, supplier: e.target.value })} 
-                                placeholder="Enter supplier name" 
-                                className="w-full p-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-orange-200 focus:border-orange-500 outline-none transition-all duration-200" 
+                            <input
+                                type="text"
+                                value={form.supplier}
+                                onChange={(e) => setForm({ ...form, supplier: e.target.value })}
+                                placeholder="Enter supplier name"
+                                className="w-full p-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-orange-200 focus:border-orange-500 outline-none transition-all duration-200"
                             />
                         </div>
 
                         <div className="grid grid-cols-2 gap-4">
                             <div>
                                 <label className="block text-sm font-semibold text-gray-700 mb-2">Quantity *</label>
-                                <input 
-                                    type="number" 
-                                    value={form.quantity} 
-                                    onChange={(e) => setForm({ ...form, quantity: e.target.value })} 
-                                    placeholder="0" 
-                                    step="0.01" 
-                                    min="0" 
-                                    className="w-full p-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-orange-200 focus:border-orange-500 outline-none transition-all duration-200" 
+                                <input
+                                    type="number"
+                                    value={form.quantity}
+                                    onChange={(e) => setForm({ ...form, quantity: e.target.value })}
+                                    placeholder="0"
+                                    step="0.01"
+                                    min="0"
+                                    className="w-full p-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-orange-200 focus:border-orange-500 outline-none transition-all duration-200"
                                 />
                             </div>
 
                             <div>
                                 <label className="block text-sm font-semibold text-gray-700 mb-2">Unit</label>
-                                <select 
-                                    value={form.unit} 
-                                    onChange={(e) => setForm({ ...form, unit: e.target.value })} 
+                                <select
+                                    value={form.unit}
+                                    onChange={(e) => setForm({ ...form, unit: e.target.value })}
                                     className="w-full p-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-orange-200 focus:border-orange-500 outline-none transition-all duration-200"
                                 >
                                     <option value="kg">kg</option>
@@ -1912,14 +2612,14 @@ function StockPurchaseModal({ show, onClose, inventory, form, setForm, onSubmit 
 
                         <div>
                             <label className="block text-sm font-semibold text-gray-700 mb-2">Price Per Unit (₹) *</label>
-                            <input 
-                                type="number" 
-                                value={form.pricePerUnit} 
-                                onChange={(e) => setForm({ ...form, pricePerUnit: e.target.value })} 
-                                placeholder="0" 
-                                step="0.01" 
-                                min="0" 
-                                className="w-full p-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-orange-200 focus:border-orange-500 outline-none transition-all duration-200" 
+                            <input
+                                type="number"
+                                value={form.pricePerUnit}
+                                onChange={(e) => setForm({ ...form, pricePerUnit: e.target.value })}
+                                placeholder="0"
+                                step="0.01"
+                                min="0"
+                                className="w-full p-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-orange-200 focus:border-orange-500 outline-none transition-all duration-200"
                             />
                         </div>
 
@@ -1934,48 +2634,48 @@ function StockPurchaseModal({ show, onClose, inventory, form, setForm, onSubmit 
                         <div className="grid grid-cols-2 gap-4">
                             <div>
                                 <label className="block text-sm font-semibold text-gray-700 mb-2">Bill Number</label>
-                                <input 
-                                    type="text" 
-                                    value={form.billNumber} 
-                                    onChange={(e) => setForm({ ...form, billNumber: e.target.value })} 
-                                    placeholder="Optional" 
-                                    className="w-full p-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-orange-200 focus:border-orange-500 outline-none transition-all duration-200" 
+                                <input
+                                    type="text"
+                                    value={form.billNumber}
+                                    onChange={(e) => setForm({ ...form, billNumber: e.target.value })}
+                                    placeholder="Optional"
+                                    className="w-full p-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-orange-200 focus:border-orange-500 outline-none transition-all duration-200"
                                 />
                             </div>
 
                             <div>
                                 <label className="block text-sm font-semibold text-gray-700 mb-2">Bill Date</label>
-                                <input 
-                                    type="date" 
-                                    value={form.billDate} 
-                                    onChange={(e) => setForm({ ...form, billDate: e.target.value })} 
-                                    className="w-full p-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-orange-200 focus:border-orange-500 outline-none transition-all duration-200" 
+                                <input
+                                    type="date"
+                                    value={form.billDate}
+                                    onChange={(e) => setForm({ ...form, billDate: e.target.value })}
+                                    className="w-full p-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-orange-200 focus:border-orange-500 outline-none transition-all duration-200"
                                 />
                             </div>
                         </div>
 
                         <div>
                             <label className="block text-sm font-semibold text-gray-700 mb-2">Note</label>
-                            <textarea 
-                                value={form.note} 
-                                onChange={(e) => setForm({ ...form, note: e.target.value })} 
-                                placeholder="Add purchase details..." 
-                                rows="3" 
-                                className="w-full p-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-orange-200 focus:border-orange-500 outline-none transition-all duration-200 resize-none" 
+                            <textarea
+                                value={form.note}
+                                onChange={(e) => setForm({ ...form, note: e.target.value })}
+                                placeholder="Add purchase details..."
+                                rows="3"
+                                className="w-full p-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-orange-200 focus:border-orange-500 outline-none transition-all duration-200 resize-none"
                             />
                         </div>
                     </div>
 
                     <div className="flex gap-3 mt-6">
-                        <button 
-                            onClick={onClose} 
+                        <button
+                            onClick={onClose}
                             className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 py-3 px-4 rounded-xl font-semibold transition-all duration-200"
                         >
                             Cancel
                         </button>
-                        <button 
-                            onClick={onSubmit} 
-                            disabled={!form.inventoryId || !form.supplier || !form.quantity || !form.pricePerUnit} 
+                        <button
+                            onClick={onSubmit}
+                            disabled={!form.inventoryId || !form.supplier || !form.quantity || !form.pricePerUnit}
                             className="flex-1 bg-orange-600 hover:bg-orange-700 disabled:bg-gray-400 text-white py-3 px-4 rounded-xl font-semibold transition-all duration-200 flex items-center justify-center gap-2 disabled:cursor-not-allowed"
                         >
                             <Truck className="w-4 h-4" /> Purchase Stock
@@ -1987,7 +2687,7 @@ function StockPurchaseModal({ show, onClose, inventory, form, setForm, onSubmit 
     );
 }
 
-// Expense Modal
+// Expense Modal (keep existing)
 function ExpenseModal({ show, onClose, form, setForm, onSubmit }) {
     if (!show) return null;
 
@@ -2006,22 +2706,22 @@ function ExpenseModal({ show, onClose, form, setForm, onSubmit }) {
                     <div className="space-y-4">
                         <div>
                             <label className="block text-sm font-semibold text-gray-700 mb-2">Amount (₹) *</label>
-                            <input 
-                                type="number" 
-                                value={form.amount} 
-                                onChange={(e) => setForm({ ...form, amount: e.target.value })} 
-                                placeholder="Enter amount" 
-                                step="0.01" 
-                                min="0" 
-                                className="w-full p-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-red-200 focus:border-red-500 outline-none transition-all duration-200" 
+                            <input
+                                type="number"
+                                value={form.amount}
+                                onChange={(e) => setForm({ ...form, amount: e.target.value })}
+                                placeholder="Enter amount"
+                                step="0.01"
+                                min="0"
+                                className="w-full p-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-red-200 focus:border-red-500 outline-none transition-all duration-200"
                             />
                         </div>
 
                         <div>
                             <label className="block text-sm font-semibold text-gray-700 mb-2">Expense Category *</label>
-                            <select 
-                                value={form.expenseCategory} 
-                                onChange={(e) => setForm({ ...form, expenseCategory: e.target.value })} 
+                            <select
+                                value={form.expenseCategory}
+                                onChange={(e) => setForm({ ...form, expenseCategory: e.target.value })}
                                 className="w-full p-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-red-200 focus:border-red-500 outline-none transition-all duration-200"
                             >
                                 <option value="transport">Transport</option>
@@ -2035,37 +2735,37 @@ function ExpenseModal({ show, onClose, form, setForm, onSubmit }) {
 
                         <div>
                             <label className="block text-sm font-semibold text-gray-700 mb-2">Paid To</label>
-                            <input 
-                                type="text" 
-                                value={form.expenseTo} 
-                                onChange={(e) => setForm({ ...form, expenseTo: e.target.value })} 
-                                placeholder="To whom expense paid" 
-                                className="w-full p-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-red-200 focus:border-red-500 outline-none transition-all duration-200" 
+                            <input
+                                type="text"
+                                value={form.expenseTo}
+                                onChange={(e) => setForm({ ...form, expenseTo: e.target.value })}
+                                placeholder="To whom expense paid"
+                                className="w-full p-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-red-200 focus:border-red-500 outline-none transition-all duration-200"
                             />
                         </div>
 
                         <div>
                             <label className="block text-sm font-semibold text-gray-700 mb-2">Note</label>
-                            <textarea 
-                                value={form.note} 
-                                onChange={(e) => setForm({ ...form, note: e.target.value })} 
-                                placeholder="Add expense details..." 
-                                rows="3" 
-                                className="w-full p-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-red-200 focus:border-red-500 outline-none transition-all duration-200 resize-none" 
+                            <textarea
+                                value={form.note}
+                                onChange={(e) => setForm({ ...form, note: e.target.value })}
+                                placeholder="Add expense details..."
+                                rows="3"
+                                className="w-full p-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-red-200 focus:border-red-500 outline-none transition-all duration-200 resize-none"
                             />
                         </div>
                     </div>
 
                     <div className="flex gap-3 mt-6">
-                        <button 
-                            onClick={onClose} 
+                        <button
+                            onClick={onClose}
                             className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 py-3 px-4 rounded-xl font-semibold transition-all duration-200"
                         >
                             Cancel
                         </button>
-                        <button 
-                            onClick={onSubmit} 
-                            disabled={!form.amount || !form.expenseCategory} 
+                        <button
+                            onClick={onSubmit}
+                            disabled={!form.amount || !form.expenseCategory}
                             className="flex-1 bg-red-600 hover:bg-red-700 disabled:bg-gray-400 text-white py-3 px-4 rounded-xl font-semibold transition-all duration-200 flex items-center justify-center gap-2 disabled:cursor-not-allowed"
                         >
                             <Receipt className="w-4 h-4" /> Add Expense
@@ -2077,7 +2777,7 @@ function ExpenseModal({ show, onClose, form, setForm, onSubmit }) {
     );
 }
 
-// Commission Modal
+// Commission Modal (keep existing)
 function CommissionModal({ show, onClose, form, setForm, onSubmit }) {
     if (!show) return null;
 
@@ -2096,33 +2796,33 @@ function CommissionModal({ show, onClose, form, setForm, onSubmit }) {
                     <div className="space-y-4">
                         <div>
                             <label className="block text-sm font-semibold text-gray-700 mb-2">Amount (₹) *</label>
-                            <input 
-                                type="number" 
-                                value={form.amount} 
-                                onChange={(e) => setForm({ ...form, amount: e.target.value })} 
-                                placeholder="Enter amount" 
-                                step="0.01" 
-                                min="0" 
-                                className="w-full p-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-purple-200 focus:border-purple-500 outline-none transition-all duration-200" 
+                            <input
+                                type="number"
+                                value={form.amount}
+                                onChange={(e) => setForm({ ...form, amount: e.target.value })}
+                                placeholder="Enter amount"
+                                step="0.01"
+                                min="0"
+                                className="w-full p-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-purple-200 focus:border-purple-500 outline-none transition-all duration-200"
                             />
                         </div>
 
                         <div>
                             <label className="block text-sm font-semibold text-gray-700 mb-2">Commission From *</label>
-                            <input 
-                                type="text" 
-                                value={form.commissionFrom} 
-                                onChange={(e) => setForm({ ...form, commissionFrom: e.target.value })} 
-                                placeholder="From whom commission received" 
-                                className="w-full p-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-purple-200 focus:border-purple-500 outline-none transition-all duration-200" 
+                            <input
+                                type="text"
+                                value={form.commissionFrom}
+                                onChange={(e) => setForm({ ...form, commissionFrom: e.target.value })}
+                                placeholder="From whom commission received"
+                                className="w-full p-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-purple-200 focus:border-purple-500 outline-none transition-all duration-200"
                             />
                         </div>
 
                         <div>
                             <label className="block text-sm font-semibold text-gray-700 mb-2">Payment Method</label>
-                            <select 
-                                value={form.commissionType} 
-                                onChange={(e) => setForm({ ...form, commissionType: e.target.value })} 
+                            <select
+                                value={form.commissionType}
+                                onChange={(e) => setForm({ ...form, commissionType: e.target.value })}
                                 className="w-full p-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-purple-200 focus:border-purple-500 outline-none transition-all duration-200"
                             >
                                 <option value="cash">Cash</option>
@@ -2133,26 +2833,26 @@ function CommissionModal({ show, onClose, form, setForm, onSubmit }) {
 
                         <div>
                             <label className="block text-sm font-semibold text-gray-700 mb-2">Note</label>
-                            <textarea 
-                                value={form.note} 
-                                onChange={(e) => setForm({ ...form, note: e.target.value })} 
-                                placeholder="Add commission details..." 
-                                rows="3" 
-                                className="w-full p-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-purple-200 focus:border-purple-500 outline-none transition-all duration-200 resize-none" 
+                            <textarea
+                                value={form.note}
+                                onChange={(e) => setForm({ ...form, note: e.target.value })}
+                                placeholder="Add commission details..."
+                                rows="3"
+                                className="w-full p-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-purple-200 focus:border-purple-500 outline-none transition-all duration-200 resize-none"
                             />
                         </div>
                     </div>
 
                     <div className="flex gap-3 mt-6">
-                        <button 
-                            onClick={onClose} 
+                        <button
+                            onClick={onClose}
                             className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 py-3 px-4 rounded-xl font-semibold transition-all duration-200"
                         >
                             Cancel
                         </button>
-                        <button 
-                            onClick={onSubmit} 
-                            disabled={!form.amount || !form.commissionFrom} 
+                        <button
+                            onClick={onSubmit}
+                            disabled={!form.amount || !form.commissionFrom}
                             className="flex-1 bg-purple-600 hover:bg-purple-700 disabled:bg-gray-400 text-white py-3 px-4 rounded-xl font-semibold transition-all duration-200 flex items-center justify-center gap-2 disabled:cursor-not-allowed"
                         >
                             <Gift className="w-4 h-4" /> Add Commission
@@ -2164,7 +2864,7 @@ function CommissionModal({ show, onClose, form, setForm, onSubmit }) {
     );
 }
 
-// Damaged Goods Modal
+// Damaged Goods Modal (keep existing)
 function DamagedGoodsModal({ show, onClose, inventory, form, setForm, onSubmit }) {
     if (!show) return null;
 
@@ -2185,9 +2885,9 @@ function DamagedGoodsModal({ show, onClose, inventory, form, setForm, onSubmit }
                     <div className="space-y-4">
                         <div>
                             <label className="block text-sm font-semibold text-gray-700 mb-2">Product *</label>
-                            <select 
-                                value={form.inventoryId} 
-                                onChange={(e) => setForm({ ...form, inventoryId: e.target.value })} 
+                            <select
+                                value={form.inventoryId}
+                                onChange={(e) => setForm({ ...form, inventoryId: e.target.value })}
                                 className="w-full p-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-amber-200 focus:border-amber-500 outline-none transition-all duration-200"
                             >
                                 <option value="">Select Product</option>
@@ -2202,23 +2902,23 @@ function DamagedGoodsModal({ show, onClose, inventory, form, setForm, onSubmit }
                         <div className="grid grid-cols-2 gap-4">
                             <div>
                                 <label className="block text-sm font-semibold text-gray-700 mb-2">Damaged Quantity *</label>
-                                <input 
-                                    type="number" 
-                                    value={form.quantity} 
-                                    onChange={(e) => setForm({ ...form, quantity: e.target.value })} 
-                                    placeholder="0" 
-                                    step="0.01" 
-                                    min="0" 
-                                    max={selectedInventory?.currentStock} 
-                                    className="w-full p-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-amber-200 focus:border-amber-500 outline-none transition-all duration-200" 
+                                <input
+                                    type="number"
+                                    value={form.quantity}
+                                    onChange={(e) => setForm({ ...form, quantity: e.target.value })}
+                                    placeholder="0"
+                                    step="0.01"
+                                    min="0"
+                                    max={selectedInventory?.currentStock}
+                                    className="w-full p-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-amber-200 focus:border-amber-500 outline-none transition-all duration-200"
                                 />
                             </div>
 
                             <div>
                                 <label className="block text-sm font-semibold text-gray-700 mb-2">Unit</label>
-                                <select 
-                                    value={form.unit} 
-                                    onChange={(e) => setForm({ ...form, unit: e.target.value })} 
+                                <select
+                                    value={form.unit}
+                                    onChange={(e) => setForm({ ...form, unit: e.target.value })}
                                     className="w-full p-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-amber-200 focus:border-amber-500 outline-none transition-all duration-200"
                                 >
                                     <option value="kg">kg</option>
@@ -2240,37 +2940,37 @@ function DamagedGoodsModal({ show, onClose, inventory, form, setForm, onSubmit }
 
                         <div>
                             <label className="block text-sm font-semibold text-gray-700 mb-2">Damage Reason *</label>
-                            <input 
-                                type="text" 
-                                value={form.damageReason} 
-                                onChange={(e) => setForm({ ...form, damageReason: e.target.value })} 
-                                placeholder="Why was the product damaged?" 
-                                className="w-full p-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-amber-200 focus:border-amber-500 outline-none transition-all duration-200" 
+                            <input
+                                type="text"
+                                value={form.damageReason}
+                                onChange={(e) => setForm({ ...form, damageReason: e.target.value })}
+                                placeholder="Why was the product damaged?"
+                                className="w-full p-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-amber-200 focus:border-amber-500 outline-none transition-all duration-200"
                             />
                         </div>
 
                         <div>
                             <label className="block text-sm font-semibold text-gray-700 mb-2">Note</label>
-                            <textarea 
-                                value={form.note} 
-                                onChange={(e) => setForm({ ...form, note: e.target.value })} 
-                                placeholder="Add damage details..." 
-                                rows="3" 
-                                className="w-full p-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-amber-200 focus:border-amber-500 outline-none transition-all duration-200 resize-none" 
+                            <textarea
+                                value={form.note}
+                                onChange={(e) => setForm({ ...form, note: e.target.value })}
+                                placeholder="Add damage details..."
+                                rows="3"
+                                className="w-full p-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-amber-200 focus:border-amber-500 outline-none transition-all duration-200 resize-none"
                             />
                         </div>
                     </div>
 
                     <div className="flex gap-3 mt-6">
-                        <button 
-                            onClick={onClose} 
+                        <button
+                            onClick={onClose}
                             className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 py-3 px-4 rounded-xl font-semibold transition-all duration-200"
                         >
                             Cancel
                         </button>
-                        <button 
-                            onClick={onSubmit} 
-                            disabled={!form.inventoryId || !form.quantity || !form.damageReason} 
+                        <button
+                            onClick={onSubmit}
+                            disabled={!form.inventoryId || !form.quantity || !form.damageReason}
                             className="flex-1 bg-amber-600 hover:bg-amber-700 disabled:bg-gray-400 text-white py-3 px-4 rounded-xl font-semibold transition-all duration-200 flex items-center justify-center gap-2 disabled:cursor-not-allowed"
                         >
                             <ShieldAlert className="w-4 h-4" /> Record Damage
@@ -2282,7 +2982,7 @@ function DamagedGoodsModal({ show, onClose, inventory, form, setForm, onSubmit }
     );
 }
 
-// Bully Purchase Modal
+// Bully Purchase Modal (keep existing)
 function BullyPurchaseModal({ show, onClose, inventory, form, setForm, onSubmit }) {
     if (!show) return null;
 
@@ -2324,8 +3024,8 @@ function BullyPurchaseModal({ show, onClose, inventory, form, setForm, onSubmit 
                     <div className="space-y-4 mb-6">
                         <div className="flex items-center justify-between">
                             <h3 className="text-lg font-semibold text-gray-800">Purchase Items</h3>
-                            <button 
-                                onClick={handleAddItem} 
+                            <button
+                                onClick={handleAddItem}
                                 className="flex items-center gap-2 px-3 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded-lg transition-colors duration-200"
                             >
                                 <Plus className="w-4 h-4" /> Add Item
@@ -2337,8 +3037,8 @@ function BullyPurchaseModal({ show, onClose, inventory, form, setForm, onSubmit 
                                 <div className="flex items-center justify-between mb-3">
                                     <h4 className="font-medium text-gray-700">Item {index + 1}</h4>
                                     {form.items.length > 1 && (
-                                        <button 
-                                            onClick={() => handleRemoveItem(index)} 
+                                        <button
+                                            onClick={() => handleRemoveItem(index)}
                                             className="text-red-500 hover:text-red-700 transition-colors"
                                         >
                                             <XCircle className="w-5 h-5" />
@@ -2349,9 +3049,9 @@ function BullyPurchaseModal({ show, onClose, inventory, form, setForm, onSubmit 
                                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                                     <div>
                                         <label className="block text-sm font-medium text-gray-700 mb-1">Product *</label>
-                                        <select 
-                                            value={item.inventoryId} 
-                                            onChange={(e) => handleItemChange(index, 'inventoryId', e.target.value)} 
+                                        <select
+                                            value={item.inventoryId}
+                                            onChange={(e) => handleItemChange(index, 'inventoryId', e.target.value)}
                                             className="w-full p-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-indigo-200 focus:border-indigo-500 outline-none transition-all duration-200"
                                         >
                                             <option value="">Select Product</option>
@@ -2365,22 +3065,22 @@ function BullyPurchaseModal({ show, onClose, inventory, form, setForm, onSubmit 
 
                                     <div>
                                         <label className="block text-sm font-medium text-gray-700 mb-1">Quantity *</label>
-                                        <input 
-                                            type="number" 
-                                            value={item.quantity} 
-                                            onChange={(e) => handleItemChange(index, 'quantity', e.target.value)} 
-                                            placeholder="0" 
-                                            step="0.01" 
-                                            min="0" 
-                                            className="w-full p-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-indigo-200 focus:border-indigo-500 outline-none transition-all duration-200" 
+                                        <input
+                                            type="number"
+                                            value={item.quantity}
+                                            onChange={(e) => handleItemChange(index, 'quantity', e.target.value)}
+                                            placeholder="0"
+                                            step="0.01"
+                                            min="0"
+                                            className="w-full p-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-indigo-200 focus:border-indigo-500 outline-none transition-all duration-200"
                                         />
                                     </div>
 
                                     <div>
                                         <label className="block text-sm font-medium text-gray-700 mb-1">Unit</label>
-                                        <select 
-                                            value={item.unit} 
-                                            onChange={(e) => handleItemChange(index, 'unit', e.target.value)} 
+                                        <select
+                                            value={item.unit}
+                                            onChange={(e) => handleItemChange(index, 'unit', e.target.value)}
                                             className="w-full p-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-indigo-200 focus:border-indigo-500 outline-none transition-all duration-200"
                                         >
                                             <option value="kg">kg</option>
@@ -2411,48 +3111,48 @@ function BullyPurchaseModal({ show, onClose, inventory, form, setForm, onSubmit 
                     <div className="space-y-4">
                         <div>
                             <label className="block text-sm font-semibold text-gray-700 mb-2">Supplier *</label>
-                            <input 
-                                type="text" 
-                                value={form.bullySupplier} 
-                                onChange={(e) => setForm({ ...form, bullySupplier: e.target.value })} 
-                                placeholder="Enter supplier name" 
-                                className="w-full p-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-indigo-200 focus:border-indigo-500 outline-none transition-all duration-200" 
+                            <input
+                                type="text"
+                                value={form.bullySupplier}
+                                onChange={(e) => setForm({ ...form, bullySupplier: e.target.value })}
+                                placeholder="Enter supplier name"
+                                className="w-full p-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-indigo-200 focus:border-indigo-500 outline-none transition-all duration-200"
                             />
                         </div>
 
                         <div>
                             <label className="block text-sm font-semibold text-gray-700 mb-2">Bill Number</label>
-                            <input 
-                                type="text" 
-                                value={form.bullyBillNumber} 
-                                onChange={(e) => setForm({ ...form, bullyBillNumber: e.target.value })} 
-                                placeholder="Optional" 
-                                className="w-full p-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-indigo-200 focus:border-indigo-500 outline-none transition-all duration-200" 
+                            <input
+                                type="text"
+                                value={form.bullyBillNumber}
+                                onChange={(e) => setForm({ ...form, bullyBillNumber: e.target.value })}
+                                placeholder="Optional"
+                                className="w-full p-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-indigo-200 focus:border-indigo-500 outline-none transition-all duration-200"
                             />
                         </div>
 
                         <div>
                             <label className="block text-sm font-semibold text-gray-700 mb-2">Note</label>
-                            <textarea 
-                                value={form.note} 
-                                onChange={(e) => setForm({ ...form, note: e.target.value })} 
-                                placeholder="Add purchase details..." 
-                                rows="3" 
-                                className="w-full p-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-indigo-200 focus:border-indigo-500 outline-none transition-all duration-200 resize-none" 
+                            <textarea
+                                value={form.note}
+                                onChange={(e) => setForm({ ...form, note: e.target.value })}
+                                placeholder="Add purchase details..."
+                                rows="3"
+                                className="w-full p-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-indigo-200 focus:border-indigo-500 outline-none transition-all duration-200 resize-none"
                             />
                         </div>
                     </div>
 
                     <div className="flex gap-3 mt-6">
-                        <button 
-                            onClick={onClose} 
+                        <button
+                            onClick={onClose}
                             className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 py-3 px-4 rounded-xl font-semibold transition-all duration-200"
                         >
                             Cancel
                         </button>
-                        <button 
-                            onClick={onSubmit} 
-                            disabled={!form.bullySupplier || form.items.some(item => !item.inventoryId || !item.quantity)} 
+                        <button
+                            onClick={onSubmit}
+                            disabled={!form.bullySupplier || form.items.some(item => !item.inventoryId || !item.quantity)}
                             className="flex-1 bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-400 text-white py-3 px-4 rounded-xl font-semibold transition-all duration-200 flex items-center justify-center gap-2 disabled:cursor-not-allowed"
                         >
                             <ShoppingBag className="w-4 h-4" /> Record Purchase
@@ -2464,7 +3164,7 @@ function BullyPurchaseModal({ show, onClose, inventory, form, setForm, onSubmit 
     );
 }
 
-// Reminder Modal
+// Reminder Modal (keep existing)
 function ReminderModal({ show, onClose, customers, form, setForm, onSubmit }) {
     if (!show) return null;
 
@@ -2485,9 +3185,9 @@ function ReminderModal({ show, onClose, customers, form, setForm, onSubmit }) {
                     <div className="space-y-4">
                         <div>
                             <label className="block text-sm font-semibold text-gray-700 mb-2">Customer *</label>
-                            <select 
-                                value={form.customerId} 
-                                onChange={(e) => setForm({ ...form, customerId: e.target.value })} 
+                            <select
+                                value={form.customerId}
+                                onChange={(e) => setForm({ ...form, customerId: e.target.value })}
                                 className="w-full p-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-blue-200 focus:border-blue-500 outline-none transition-all duration-200"
                             >
                                 <option value="">Select Customer</option>
@@ -2509,50 +3209,50 @@ function ReminderModal({ show, onClose, customers, form, setForm, onSubmit }) {
 
                         <div>
                             <label className="block text-sm font-semibold text-gray-700 mb-2">Reminder Amount (₹) *</label>
-                            <input 
-                                type="number" 
-                                value={form.amount} 
-                                onChange={(e) => setForm({ ...form, amount: e.target.value })} 
-                                placeholder="Enter amount" 
-                                step="0.01" 
-                                min="0" 
-                                max={selectedCustomer?.currentBalance} 
-                                className="w-full p-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-blue-200 focus:border-blue-500 outline-none transition-all duration-200" 
+                            <input
+                                type="number"
+                                value={form.amount}
+                                onChange={(e) => setForm({ ...form, amount: e.target.value })}
+                                placeholder="Enter amount"
+                                step="0.01"
+                                min="0"
+                                max={selectedCustomer?.currentBalance}
+                                className="w-full p-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-blue-200 focus:border-blue-500 outline-none transition-all duration-200"
                             />
                         </div>
 
                         <div>
                             <label className="block text-sm font-semibold text-gray-700 mb-2">Reminder Date *</label>
-                            <input 
-                                type="date" 
-                                value={form.reminderDate} 
-                                onChange={(e) => setForm({ ...form, reminderDate: e.target.value })} 
-                                className="w-full p-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-blue-200 focus:border-blue-500 outline-none transition-all duration-200" 
+                            <input
+                                type="date"
+                                value={form.reminderDate}
+                                onChange={(e) => setForm({ ...form, reminderDate: e.target.value })}
+                                className="w-full p-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-blue-200 focus:border-blue-500 outline-none transition-all duration-200"
                             />
                         </div>
 
                         <div>
                             <label className="block text-sm font-semibold text-gray-700 mb-2">Note</label>
-                            <textarea 
-                                value={form.note} 
-                                onChange={(e) => setForm({ ...form, note: e.target.value })} 
-                                placeholder="Add reminder message..." 
-                                rows="3" 
-                                className="w-full p-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-blue-200 focus:border-blue-500 outline-none transition-all duration-200 resize-none" 
+                            <textarea
+                                value={form.note}
+                                onChange={(e) => setForm({ ...form, note: e.target.value })}
+                                placeholder="Add reminder message..."
+                                rows="3"
+                                className="w-full p-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-blue-200 focus:border-blue-500 outline-none transition-all duration-200 resize-none"
                             />
                         </div>
                     </div>
 
                     <div className="flex gap-3 mt-6">
-                        <button 
-                            onClick={onClose} 
+                        <button
+                            onClick={onClose}
                             className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 py-3 px-4 rounded-xl font-semibold transition-all duration-200"
                         >
                             Cancel
                         </button>
-                        <button 
-                            onClick={onSubmit} 
-                            disabled={!form.customerId || !form.amount || !form.reminderDate} 
+                        <button
+                            onClick={onSubmit}
+                            disabled={!form.customerId || !form.amount || !form.reminderDate}
                             className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white py-3 px-4 rounded-xl font-semibold transition-all duration-200 flex items-center justify-center gap-2 disabled:cursor-not-allowed"
                         >
                             <Calendar className="w-4 h-4" /> Add Reminder
@@ -2564,7 +3264,7 @@ function ReminderModal({ show, onClose, customers, form, setForm, onSubmit }) {
     );
 }
 
-// Customer Transactions Modal
+// Customer Transactions Modal (keep existing)
 function CustomerTransactionsModal({ show, onClose, customer, transactions, loading }) {
     if (!show) return null;
 
@@ -2631,9 +3331,17 @@ function CustomerTransactionsModal({ show, onClose, customer, transactions, load
                                                 )}
                                             </div>
                                         </div>
-                                        
+
                                         {transaction.note && (
                                             <p className="text-sm text-gray-600 mb-2">{transaction.note}</p>
+                                        )}
+
+                                        {transaction.purchaseCommission?.totalCommission > 0 && (
+                                            <div className="mt-2 p-2 bg-purple-50 rounded-lg">
+                                                <p className="text-sm text-purple-700">
+                                                    <strong>Commission Deducted:</strong> {formatCurrency(transaction.purchaseCommission.totalCommission)}
+                                                </p>
+                                            </div>
                                         )}
 
                                         {transaction.items && transaction.items.length > 0 && (
@@ -2643,7 +3351,12 @@ function CustomerTransactionsModal({ show, onClose, customer, transactions, load
                                                     {transaction.items.map((item, index) => (
                                                         <div key={index} className="flex justify-between text-sm">
                                                             <span>{item.productName} ({item.quantity} {item.unit})</span>
-                                                            <span>{formatCurrency(item.total)}</span>
+                                                            <span>
+                                                                {formatCurrency(item.total)}
+                                                                {item.totalCommission > 0 && (
+                                                                    <span className="ml-2 text-xs text-purple-600">(-{formatCurrency(item.totalCommission)})</span>
+                                                                )}
+                                                            </span>
                                                         </div>
                                                     ))}
                                                 </div>
@@ -2703,8 +3416,8 @@ function ActionButton({ icon: Icon, label, onClick, color = "blue" }) {
     };
 
     return (
-        <button 
-            onClick={onClick} 
+        <button
+            onClick={onClick}
             className={`p-4 rounded-xl border transition-all duration-200 flex flex-col items-center gap-2 ${colors[color]} hover:border-current`}
         >
             <Icon className="w-6 h-6" />

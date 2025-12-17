@@ -254,15 +254,15 @@ const OrdersPage = ({ setCurrentPage }) => {
   return (
     <div className="space-y-6">
       <div className="border-b border-gray-200 pb-5">
-        <h1 className="text-3xl font-bold text-gray-900">Orders</h1>
-        <p className="mt-2 text-sm text-gray-600">
+        <h1 className="text-3xl ml-12 font-bold text-gray-900">Orders</h1>
+        <p className="mt-2 ml-12 text-sm text-gray-600">
           Manage and track all your customer orders
         </p>
       </div>
 
       {/* Summary cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+        <div className="bg-white ml-11 p-6 rounded-lg shadow-sm border border-gray-200">
           <div className="flex items-center">
             <Package className="h-8 w-8 text-yellow-600" />
             <div className="ml-4">
@@ -309,7 +309,7 @@ const OrdersPage = ({ setCurrentPage }) => {
       </div>
 
       {/* Search + filter bar */}
-      <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
+      <div className="bg-white ml-12 p-4 rounded-lg shadow-sm border border-gray-200">
         <div className="flex flex-col sm:flex-row gap-4">
           <div className="flex-1">
             <div className="relative">
@@ -338,7 +338,7 @@ const OrdersPage = ({ setCurrentPage }) => {
       </div>
 
       {/* Orders Table */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+      <div className="bg-white ml-11 rounded-lg shadow-sm border border-gray-200 overflow-hidden">
         <div className="overflow-x-auto">
           {isLoading ? (
             <div className="p-6 text-center text-gray-500">Loading orders...</div>

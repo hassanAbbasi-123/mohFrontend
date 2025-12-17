@@ -1,7 +1,10 @@
+/* SellerProducts.jsx */
 "use client";
+
 import { useState, useEffect } from "react";
 import ProductForm from "@/components/products/ProductForm";
 import CouponModal from "@/components/products/CouponModal";
+
 import {
   useGetMyProductsQuery,
   useCreateProductMutation,
@@ -12,19 +15,25 @@ import {
   useApplyCouponMutation,
   useRemoveCouponFromSellerProductMutation,
 } from "@/store/features/productApi";
+
 import { useGetAllCategoriesWithSubForSellerQuery } from "@/store/features/categoryApi";
+
 const API_BASE = process.env.NEXT_PUBLIC_API_URL;
+
 const SellerProducts = () => {
   const [user, setUser] = useState(null);
   const [token, setToken] = useState(null);
+
   const [editingProduct, setEditingProduct] = useState(null);
   const [showForm, setShowForm] = useState(false);
   const [showCouponModal, setShowCouponModal] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [filter, setFilter] = useState("all");
   const [viewProduct, setViewProduct] = useState(null);
+
   // Success message
   const [successMessage, setSuccessMessage] = useState("");
+
   useEffect(() => {
     if (typeof window !== "undefined") {
       const storedUser = localStorage.getItem("user");
@@ -35,18 +44,23 @@ const SellerProducts = () => {
       }
     }
   }, []);
+
   const { data: categoriesData, isLoading: categoriesLoading } = useGetAllCategoriesWithSubForSellerQuery();
   const categories = categoriesData || [];
+
   const { data: productsData, isLoading, error, refetch } = useGetMyProductsQuery(undefined, {
     skip: !token,
   });
+
   // Normalize backend response into an array
   const products = Array.isArray(productsData) ? productsData : [];
+
   // Debug log to check what backend is returning
   useEffect(() => {
     console.log("Fetched productsData:", productsData);
     console.log("Fetched categoriesData:", categoriesData);
   }, [productsData, categoriesData]);
+
   const [createProduct] = useCreateProductMutation();
   const [updateProduct] = useUpdateOwnProductMutation();
   const [deleteProduct] = useDeleteOwnProductMutation();
@@ -54,15 +68,19 @@ const SellerProducts = () => {
   const [toggleSale] = useToggleSaleMutation();
   const [applyCoupon] = useApplyCouponMutation();
   const [removeCoupon] = useRemoveCouponFromSellerProductMutation();
+
   useEffect(() => {
     if (!showForm) setEditingProduct(null);
   }, [showForm]);
+
   if (!user || user.role !== "seller") return null;
+
   if (isLoading || categoriesLoading) return (
     <div className="flex justify-center items-center min-h-screen">
       <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-600"></div>
     </div>
   );
+
   // Show error only if there is a network/server failure
   if (error && !products.length) {
     return (
@@ -77,17 +95,18 @@ const SellerProducts = () => {
       </div>
     );
   }
+
   const filteredProducts = products.filter((p) => {
     if (filter === "all") return true;
     if (filter === "approved") return p.status === "approved";
     if (filter === "pending") return p.status === "pending";
     if (filter === "rejected") return p.status === "rejected";
-    if (filter === "out-of-season") return p.status === "out-of-season";
     if (filter === "inStock") return p.inStock;
     if (filter === "outOfStock") return !p.inStock;
     if (filter === "onSale") return p.isOnSale;
     return true;
   });
+
   const handleCreateProduct = async (formData) => {
     try {
       const res = await createProduct(formData).unwrap();
@@ -100,6 +119,7 @@ const SellerProducts = () => {
       console.error(err);
     }
   };
+
   const handleUpdateProduct = async (formData) => {
     try {
       await updateProduct({ id: editingProduct._id, formData }).unwrap();
@@ -110,6 +130,7 @@ const SellerProducts = () => {
       console.error(err);
     }
   };
+
   const handleDeleteProduct = async (id) => {
     if (window.confirm("Are you sure you want to delete this product?")) {
       try {
@@ -120,6 +141,7 @@ const SellerProducts = () => {
       }
     }
   };
+
   const handleToggleStock = async (id) => {
     try {
       await toggleStock(id).unwrap();
@@ -128,6 +150,7 @@ const SellerProducts = () => {
       console.error(err);
     }
   };
+
   const handleToggleSale = async (id) => {
     try {
       await toggleSale(id).unwrap();
@@ -136,6 +159,7 @@ const SellerProducts = () => {
       console.error(err);
     }
   };
+
   const handleApplyCoupon = async (productId, couponId) => {
     try {
       await applyCoupon({ id: productId, couponId }).unwrap();
@@ -145,6 +169,7 @@ const SellerProducts = () => {
       console.error(err);
     }
   };
+
   const handleRemoveCoupon = async (productId, couponId) => {
     try {
       await removeCoupon({ id: productId, couponId }).unwrap();
@@ -153,13 +178,14 @@ const SellerProducts = () => {
       console.error(err);
     }
   };
+
   return (
     <div className="bg-gray-50 min-h-screen">
       <div className="container mx-auto px-4 py-8">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
           <div>
-            <h1 className="text-3xl font-bold text-gray-800 mb-1">My Products</h1>
-            <p className="text-gray-600">Manage your product inventory and promotions</p>
+            <h1 className="text-3xl ml-10 font-bold text-gray-800 mb-1">My Products</h1>
+            <p className="text-gray-600 ml-10">Manage your product inventory and promotions</p>
           </div>
           <button
             onClick={() => setShowForm(true)}
@@ -171,6 +197,7 @@ const SellerProducts = () => {
             Add New Product
           </button>
         </div>
+
         {successMessage && (
           <div className="mb-6 p-4 bg-green-50 border border-green-200 text-green-700 rounded-xl shadow-sm flex items-start">
             <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-3 mt-0.5 text-green-500 flex-shrink-0" viewBox="0 0 20 20" fill="currentColor">
@@ -179,7 +206,8 @@ const SellerProducts = () => {
             <span>{successMessage}</span>
           </div>
         )}
-        <div className="bg-white rounded-xl shadow-sm p-6 mb-8 border border-gray-100">
+
+        <div className="bg-white rounded-xl ml-9 shadow-sm p-6 mb-8 border border-gray-100">
           <div className="flex flex-col sm:flex-row sm:items-center gap-4">
             <label htmlFor="filter" className="font-medium text-gray-700 min-w-[70px]">
               Filter:
@@ -194,19 +222,19 @@ const SellerProducts = () => {
               <option value="approved">Approved</option>
               <option value="pending">Pending</option>
               <option value="rejected">Rejected</option>
-              <option value="out-of-season">Out of Season</option>
               <option value="inStock">In Stock</option>
               <option value="outOfStock">Out of Stock</option>
               <option value="onSale">On Sale</option>
             </select>
-           
+            
             <div className="text-sm text-gray-500 ml-auto">
               {filteredProducts.length} {filteredProducts.length === 1 ? 'product' : 'products'} found
             </div>
           </div>
         </div>
+
         {showForm && (
-          <ProductForm
+          <ProductForm 
             product={editingProduct}
             categories={categories}
             onSubmit={editingProduct ? handleUpdateProduct : handleCreateProduct}
@@ -216,6 +244,7 @@ const SellerProducts = () => {
             }}
           />
         )}
+
         {showCouponModal && (
           <CouponModal
             product={selectedProduct}
@@ -226,6 +255,7 @@ const SellerProducts = () => {
             }}
           />
         )}
+
         {viewProduct && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
             <div className="bg-white p-6 rounded-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto relative shadow-xl">
@@ -269,7 +299,7 @@ const SellerProducts = () => {
                     <h3 className="font-medium text-gray-700 mb-3">Description</h3>
                     <p className="text-gray-600">{viewProduct.description}</p>
                   </div>
-                 
+                  
                   <div className="space-y-4">
                     <div>
                       <h3 className="font-medium text-gray-700 mb-2">Details</h3>
@@ -278,61 +308,7 @@ const SellerProducts = () => {
                           <span className="text-gray-600">Price:</span>
                           <span className="font-medium">RS{viewProduct.price}</span>
                         </div>
-                       
-                        <div className="flex justify-between">
-                          <span className="text-gray-600">Variety:</span>
-                          <span className="font-medium">{viewProduct.variety || "—"}</span>
-                        </div>
-                       
-                        <div className="flex justify-between">
-                          <span className="text-gray-600">Unit:</span>
-                          <span className="font-medium">{viewProduct.unit || "—"}</span>
-                        </div>
-                       
-                        <div className="flex justify-between">
-                          <span className="text-gray-600">Organic:</span>
-                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${viewProduct.isOrganic ? "bg-green-100 text-green-800" : "bg-gray-100 text-gray-800"}`}>
-                            {viewProduct.isOrganic ? "Yes" : "No"}
-                          </span>
-                        </div>
-                       
-                        <div className="flex justify-between">
-                          <span className="text-gray-600">Seasonal:</span>
-                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${viewProduct.isSeasonal ? "bg-blue-100 text-blue-800" : "bg-gray-100 text-gray-800"}`}>
-                            {viewProduct.isSeasonal ? "Yes" : "No"}
-                          </span>
-                        </div>
-                       
-                        <div className="flex justify-between">
-                          <span className="text-gray-600">Harvest Date:</span>
-                          <span className="font-medium">{viewProduct.harvestDate ? new Date(viewProduct.harvestDate).toLocaleDateString() : "—"}</span>
-                        </div>
-                       
-                        <div className="flex justify-between">
-                          <span className="text-gray-600">Best Before:</span>
-                          <span className="font-medium">{viewProduct.bestBefore ? new Date(viewProduct.bestBefore).toLocaleDateString() : "—"}</span>
-                        </div>
-                       
-                        <div className="flex justify-between">
-                          <span className="text-gray-600">Storage:</span>
-                          <span className="font-medium">{viewProduct.storageInstructions || "—"}</span>
-                        </div>
-                       
-                        <div className="flex justify-between">
-                          <span className="text-gray-600">Min Order Qty:</span>
-                          <span className="font-medium">{viewProduct.minOrderQuantity || 0.25} {viewProduct.unit || "units"}</span>
-                        </div>
-                       
-                        <div className="flex justify-between">
-                          <span className="text-gray-600">Low Stock Threshold:</span>
-                          <span className="font-medium">{viewProduct.lowStockThreshold || 5} {viewProduct.unit || "units"}</span>
-                        </div>
-                       
-                        <div className="flex justify-between">
-                          <span className="text-gray-600">Quantity:</span>
-                          <span className="font-medium">{viewProduct.quantity} {viewProduct.unit || "units"}</span>
-                        </div>
-                       
+                        
                         <div className="flex justify-between">
                           <span className="text-gray-600">Status:</span>
                           <span
@@ -341,25 +317,17 @@ const SellerProducts = () => {
                                 ? "bg-green-100 text-green-800"
                                 : viewProduct.status === "pending"
                                 ? "bg-yellow-100 text-yellow-800"
-                                : viewProduct.status === "rejected"
-                                ? "bg-red-100 text-red-800"
-                                : viewProduct.status === "out-of-season"
-                                ? "bg-purple-100 text-purple-800"
-                                : "bg-gray-100 text-gray-800"
+                                : "bg-red-100 text-red-800"
                             }`}
                           >
                             {viewProduct.status === "approved"
                               ? "Approved"
                               : viewProduct.status === "pending"
                               ? "Waiting for approval"
-                              : viewProduct.status === "rejected"
-                              ? "Rejected"
-                              : viewProduct.status === "out-of-season"
-                              ? "Out of Season"
-                              : "Unknown"}
+                              : "Rejected"}
                           </span>
                         </div>
-                       
+                        
                         <div className="flex justify-between">
                           <span className="text-gray-600">Stock:</span>
                           <span
@@ -372,7 +340,7 @@ const SellerProducts = () => {
                             {viewProduct.inStock ? "In Stock" : "Out of Stock"}
                           </span>
                         </div>
-                       
+                        
                         <div className="flex justify-between">
                           <span className="text-gray-600">Sale Status:</span>
                           <span
@@ -385,37 +353,13 @@ const SellerProducts = () => {
                             {viewProduct.isOnSale ? "On Sale" : "Regular Price"}
                           </span>
                         </div>
-                       
+                        
                         {viewProduct.features && viewProduct.features.length > 0 && (
                           <div>
                             <span className="text-gray-600">Features:</span>
                             <ul className="mt-1 list-disc list-inside text-sm text-gray-700">
                               {viewProduct.features.map((feature, index) => (
                                 <li key={index}>{feature}</li>
-                              ))}
-                            </ul>
-                          </div>
-                        )}
-                       
-                        {viewProduct.attributes && Object.keys(viewProduct.attributes).length > 0 && (
-                          <div>
-                            <span className="text-gray-600">Attributes:</span>
-                            <ul className="mt-1 list-disc list-inside text-sm text-gray-700">
-                              {Object.entries(viewProduct.attributes).map(([key, value]) => (
-                                <li key={key}>{key}: {value}</li>
-                              ))}
-                            </ul>
-                          </div>
-                        )}
-                       
-                        {viewProduct.stockHistory && viewProduct.stockHistory.length > 0 && (
-                          <div>
-                            <span className="text-gray-600">Recent Stock Changes:</span>
-                            <ul className="mt-1 space-y-1 text-sm text-gray-700">
-                              {viewProduct.stockHistory.slice(-3).reverse().map((history, index) => (
-                                <li key={index}>
-                                  {new Date(history.date).toLocaleDateString()}: {history.change > 0 ? '+' : ''}{history.change} ({history.reason})
-                                </li>
                               ))}
                             </ul>
                           </div>
@@ -428,6 +372,7 @@ const SellerProducts = () => {
             </div>
           </div>
         )}
+
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredProducts?.map((product) => (
             <div
@@ -448,7 +393,7 @@ const SellerProducts = () => {
                     </svg>
                   </div>
                 )}
-               
+                
                 <div className="absolute top-3 left-3 flex flex-col gap-2">
                   <span
                     className={`px-2.5 py-1 rounded-full text-xs font-medium ${
@@ -456,37 +401,23 @@ const SellerProducts = () => {
                         ? "bg-green-100 text-green-800"
                         : product.status === "pending"
                         ? "bg-yellow-100 text-yellow-800"
-                        : product.status === "rejected"
-                        ? "bg-red-100 text-red-800"
-                        : product.status === "out-of-season"
-                        ? "bg-purple-100 text-purple-800"
-                        : "bg-gray-100 text-gray-800"
+                        : "bg-red-100 text-red-800"
                     }`}
                   >
                     {product.status === "approved"
                       ? "Approved"
                       : product.status === "pending"
                       ? "Pending"
-                      : product.status === "rejected"
-                      ? "Rejected"
-                      : product.status === "out-of-season"
-                      ? "Out of Season"
-                      : "Unknown"}
+                      : "Rejected"}
                   </span>
-                 
+                  
                   {product.isOnSale && (
                     <span className="px-2.5 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
                       On Sale
                     </span>
                   )}
-                 
-                  {product.isSeasonal && (
-                    <span className="px-2.5 py-1 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800">
-                      Seasonal
-                    </span>
-                  )}
                 </div>
-               
+                
                 <div className="absolute top-3 right-3">
                   <span
                     className={`px-2.5 py-1 rounded-full text-xs font-medium ${
@@ -497,12 +428,13 @@ const SellerProducts = () => {
                   </span>
                 </div>
               </div>
-             
+              
               <div className="p-5">
                 <h3 className="text-lg font-semibold text-gray-800 mb-2 line-clamp-1">
                   {product.name}
                 </h3>
                 <p className="text-blue-600 font-medium text-xl mb-4">RS{product.price}</p>
+
                 {product.coupons && product.coupons.length > 0 && (
                   <div className="mb-4 p-3 bg-purple-50 rounded-lg border border-purple-100">
                     <h4 className="font-medium mb-2 text-purple-700 text-sm">Applied Coupons:</h4>
@@ -510,7 +442,7 @@ const SellerProducts = () => {
                       {product.coupons.map((coupon) => (
                         <div key={coupon._id} className="flex justify-between items-center">
                           <span className="text-xs bg-purple-100 text-purple-800 px-2.5 py-1 rounded-full font-medium">
-                            {coupon.code} {coupon.discountType === 'percentage' ? `(${coupon.discountValue}%)` : `(₹${coupon.discountValue})`}
+                            {coupon.code}
                           </span>
                           <button
                             onClick={() => handleRemoveCoupon(product._id, coupon._id)}
@@ -526,6 +458,7 @@ const SellerProducts = () => {
                     </div>
                   </div>
                 )}
+
                 <div className="grid grid-cols-2 gap-2">
                   <button
                     onClick={() => {
@@ -623,8 +556,9 @@ const SellerProducts = () => {
             </div>
           ))}
         </div>
+
         {filteredProducts?.length === 0 && (
-          <div className="text-center py-16 bg-white rounded-xl shadow-sm border border-gray-100 mt-6">
+          <div className="text-center ml-10 py-16 bg-white rounded-xl shadow-sm border border-gray-100 mt-6">
             <svg xmlns="http://www.w3.org/2000/svg" className="h-16 w-16 mx-auto text-gray-400 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-16M9 9h6m-6 4h6m-6 4h6" />
             </svg>
@@ -644,4 +578,5 @@ const SellerProducts = () => {
     </div>
   );
 };
+
 export default SellerProducts;

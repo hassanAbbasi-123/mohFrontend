@@ -1,4 +1,3 @@
-// store/features/accountsApi.js
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
@@ -18,7 +17,7 @@ export const accountsApi = createApi({
       return headers;
     },
   }),
-  tagTypes: ["Customers", "Customer", "Transactions", "Ledger", "Inventory", "Reports"],
+  tagTypes: ["Customers", "Customer", "Transactions", "Ledger", "Inventory", "Reports", "CommissionCandidates"],
   endpoints: (builder) => ({
     // Customer Management
     getCustomers: builder.query({
@@ -105,7 +104,7 @@ export const accountsApi = createApi({
       }),
     }),
 
-    // Purchase & Payment
+    // Purchase & Payment with Commission Support
     createPurchase: builder.mutation({
       query: ({ customerId, ...purchaseData }) => ({
         url: `/admin/customers/${customerId}/purchases`,
@@ -179,6 +178,46 @@ export const accountsApi = createApi({
       invalidatesTags: ["Transactions", "Reports"],
     }),
 
+    // Commission Candidates Management
+    getCommissionCandidates: builder.query({
+      query: () => "/admin/commission-candidates",
+      providesTags: ["CommissionCandidates"],
+    }),
+
+    createCommissionCandidate: builder.mutation({
+      query: (candidateData) => ({
+        url: "/admin/commission-candidates",
+        method: "POST",
+        body: candidateData,
+      }),
+      invalidatesTags: ["CommissionCandidates"],
+    }),
+
+    updateCommissionCandidate: builder.mutation({
+      query: ({ id, ...candidateData }) => ({
+        url: `/admin/commission-candidates/${id}`,
+        method: "PUT",
+        body: candidateData,
+      }),
+      invalidatesTags: ["CommissionCandidates"],
+    }),
+
+    deleteCommissionCandidate: builder.mutation({
+      query: (id) => ({
+        url: `/admin/commission-candidates/${id}`,
+        method: "DELETE",
+      }),
+      invalidatesTags: ["CommissionCandidates"],
+    }),
+
+    toggleCommissionCandidateStatus: builder.mutation({
+      query: (id) => ({
+        url: `/admin/commission-candidates/${id}/toggle-status`,
+        method: "PATCH",
+      }),
+      invalidatesTags: ["CommissionCandidates"],
+    }),
+
     // Damaged Goods
     addDamagedGoods: builder.mutation({
       query: (damagedData) => ({
@@ -250,6 +289,13 @@ export const {
   useGetInventoryQuery,
   useAddInventoryMutation,
   useAddStockPurchaseMutation,
+  
+  // Commission candidates management
+  useGetCommissionCandidatesQuery,
+  useCreateCommissionCandidateMutation,
+  useUpdateCommissionCandidateMutation,
+  useDeleteCommissionCandidateMutation,
+  useToggleCommissionCandidateStatusMutation,
   
   // Other
   useAddExpenseMutation,

@@ -264,8 +264,8 @@ export default function Dashboard() {
         <div className="border-b border-gray-200 pb-5">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
-              <p className="mt-2 text-sm text-gray-600">
+              <h1 className="text-3xl ml-12 font-bold text-gray-900">Dashboard</h1>
+              <p className="mt-2 ml-12 text-sm text-gray-600">
                 Welcome back! Here's what's happening with your store today.
               </p>
             </div>
@@ -309,7 +309,7 @@ export default function Dashboard() {
         {/* Stats Grid */}
         {!isLoading && (
           <>
-            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="grid grid-cols-1 ml-12 gap-6 sm:grid-cols-2 lg:grid-cols-4">
               <StatCard
                 name="Total Revenue"
                 value={stats.totalRevenue.value}
@@ -343,7 +343,7 @@ export default function Dashboard() {
             {/* Main Content Grid */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               {/* Recent Orders */}
-              <div className="lg:col-span-2 bg-white rounded-xl shadow-sm border border-gray-200">
+              <div className="lg:col-span-2 ml-12 bg-white rounded-xl shadow-sm border border-gray-200">
                 <div className="p-6 border-b border-gray-200 flex justify-between items-center">
                   <h2 className="text-lg font-semibold text-gray-900">Recent Orders</h2>
                   <span className="text-sm text-gray-500">
@@ -497,7 +497,7 @@ export default function Dashboard() {
             {/* Additional Metrics Section */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* Products Summary */}
-              <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+              <div className="bg-white ml-12 rounded-xl shadow-sm border border-gray-200 p-6">
                 <h3 className="text-lg font-semibold text-gray-900 mb-4">Products Overview</h3>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="text-center p-4 bg-blue-50 rounded-lg">

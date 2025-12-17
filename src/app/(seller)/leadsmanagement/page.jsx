@@ -697,8 +697,8 @@ export default function SellerLeadsManagement() {
             {/* Header */}
             <div className="flex justify-between items-center mb-8">
                 <div>
-                    <h1 className="text-3xl font-bold text-gray-800">Seller Leads Management</h1>
-                    <p className="text-gray-600 mt-2">Find and purchase quality leads for your business</p>
+                    <h1 className="text-3xl ml-8 font-bold text-gray-800">Seller Leads Management</h1>
+                    <p className="text-gray-600 ml-8 mt-2">Find and purchase quality leads for your business</p>
                 </div>
                 <button
                     onClick={toggleChat}
@@ -709,7 +709,7 @@ export default function SellerLeadsManagement() {
             </div>
 
             {/* Stats Cards */}
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+            <div className="grid ml-6 grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
                 <StatCard
                     title="Available Leads"
                     value={stats.available}
@@ -741,7 +741,7 @@ export default function SellerLeadsManagement() {
             </div>
 
             {/* Main Content */}
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
+            <div className="bg-white ml-8 rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
                 {/* Tabs */}
                 <div className="border-b border-gray-200">
                     <div className="flex flex-wrap">

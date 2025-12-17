@@ -142,6 +142,63 @@ const AnimatedProgress = styled(LinearProgress)(({ theme, value }) => ({
   },
 }));
 
+// Generate mock data for development
+const generateMockData = () => {
+  const mockDashboard = {
+    overview: {
+      totalRevenue: 15250,
+      totalOrders: 245,
+      averageOrderValue: 62.24,
+      conversionRate: 3.2
+    },
+    salesData: Array.from({ length: 30 }, (_, i) => ({
+      _id: { day: i + 1, month: 12, year: 2024 },
+      revenue: Math.floor(Math.random() * 1000) + 500,
+      orders: Math.floor(Math.random() * 20) + 5
+    }))
+  };
+
+  const mockSalesReport = Array.from({ length: 15 }, (_, i) => ({
+    _id: { day: i + 1, month: 12, year: 2024 },
+    revenue: Math.floor(Math.random() * 2000) + 1000,
+    orders: Math.floor(Math.random() * 30) + 10
+  }));
+
+  const mockProducts = [
+    { name: 'Premium Wireless Headphones', revenue: 4250, quantity: 85, orders: 65 },
+    { name: 'Smart Watch Series 5', revenue: 3850, quantity: 55, orders: 50 },
+    { name: 'Laptop Backpack', revenue: 2250, quantity: 150, orders: 145 },
+    { name: 'USB-C Charging Cable', revenue: 1850, quantity: 370, orders: 365 },
+    { name: 'Wireless Mouse', revenue: 1650, quantity: 110, orders: 105 }
+  ];
+
+  const mockOrders = [
+    { _id: 'pending', count: 15 },
+    { _id: 'processing', count: 25 },
+    { _id: 'shipped', count: 35 },
+    { _id: 'delivered', count: 120 },
+    { _id: 'cancelled', count: 5 }
+  ];
+
+  const mockCustomers = {
+    totalCustomers: 185,
+    repeatPurchaseRate: 42,
+    topCustomers: [
+      { name: 'John Smith', orders: 12, totalSpent: 1250 },
+      { name: 'Emma Wilson', orders: 8, totalSpent: 980 },
+      { name: 'Robert Johnson', orders: 6, totalSpent: 750 }
+    ]
+  };
+
+  return {
+    dashboard: mockDashboard,
+    sales: mockSalesReport,
+    products: mockProducts,
+    orders: mockOrders,
+    customers: mockCustomers
+  };
+};
+
 // Custom Date Range Selector Component
 const DateRangeSelector = ({ startDate, endDate, onStartDateChange, onEndDateChange }) => {
   const theme = useTheme();
@@ -204,9 +261,9 @@ const MetricCard = ({ title, value, change, isPositive, isLoading, icon, color =
   const theme = useTheme();
   
   return (
-    <GradientCard>
-      <CardContent sx={{ p: 3, position: 'relative' }}>
-        <Box display="flex" justifyContent="space-between" alignItems="flex-start">
+    <GradientCard sx={{ height: '100%' }}>
+      <CardContent sx={{ p: 3, position: 'relative', height: '100%' }}>
+        <Box display="flex" justifyContent="space-between" alignItems="flex-start" height="100%">
           <Box flex="1">
             <Typography color="textSecondary" gutterBottom variant="body2" fontWeight="500">
               {title}
@@ -260,7 +317,7 @@ const CustomTooltip = ({ active, payload, label, formatter }) => {
           background: alpha(theme.palette.background.paper, 0.95),
           border: `1px solid ${alpha(theme.palette.primary.main, 0.2)}`,
           borderRadius: 2,
-          boxShadow: `0 4px 20px ${alpha(theme.palette.primary.main, 0.15)}`
+          boxShadow: `0 4px 20px ${alpha(theme.palette.primary.main, 0.15)}`,
         }}
       >
         <Typography variant="body2" fontWeight="600" gutterBottom color="primary">
@@ -282,6 +339,7 @@ const SellerAnalyticsDashboard = () => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const isSmallMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  const [isUsingMockData, setIsUsingMockData] = useState(false);
   
   // State for date filters
   const [dateRange, setDateRange] = useState({
@@ -291,6 +349,9 @@ const SellerAnalyticsDashboard = () => {
   
   // State for sales report grouping
   const [salesGroupBy, setSalesGroupBy] = useState('day');
+  
+  // Mock data for development
+  const mockData = generateMockData();
   
   // Format dates for API
   const formatDateForAPI = (date) => {
@@ -349,14 +410,21 @@ const SellerAnalyticsDashboard = () => {
     to: formatDateForAPI(dateRange.endDate),
   });
   
-  // Debug logging
+  // Check for errors and fallback to mock data if needed
   useEffect(() => {
-    console.log('Dashboard Data:', dashboardData);
-    console.log('Sales Data:', salesData);
-    console.log('Product Data:', productData);
-    console.log('Order Data:', orderData);
-    console.log('Customer Data:', customerData);
-  }, [dashboardData, salesData, productData, orderData, customerData]);
+    const hasApiError = dashboardError || salesError || productError || orderError || customerError;
+    if (hasApiError && !isUsingMockData) {
+      console.warn('API endpoints not available, switching to mock data');
+      setIsUsingMockData(true);
+    }
+  }, [dashboardError, salesError, productError, orderError, customerError, isUsingMockData]);
+
+  // Use mock data if API calls fail
+  const dashboard = isUsingMockData || dashboardError ? mockData.dashboard : dashboardData;
+  const sales = isUsingMockData || salesError ? mockData.sales : salesData;
+  const products = isUsingMockData || productError ? mockData.products : productData?.topProducts;
+  const orders = isUsingMockData || orderError ? mockData.orders : orderData?.orderStatusDistribution;
+  const customers = isUsingMockData || customerError ? mockData.customers : customerData;
 
   // Handle date changes
   const handleStartDateChange = (date) => {
@@ -369,11 +437,17 @@ const SellerAnalyticsDashboard = () => {
   
   // Handle refetching all data
   const handleApplyFilters = () => {
-    refetchDashboard();
-    refetchSales();
-    refetchProduct();
-    refetchOrder();
-    refetchCustomer();
+    if (isUsingMockData) {
+      // Generate new mock data on refresh
+      const newMockData = generateMockData();
+      Object.assign(mockData, newMockData);
+    } else {
+      refetchDashboard();
+      refetchSales();
+      refetchProduct();
+      refetchOrder();
+      refetchCustomer();
+    }
   };
   
   // Format currency
@@ -387,23 +461,23 @@ const SellerAnalyticsDashboard = () => {
   };
   
   // Prepare data for charts
-  const salesChartData = salesData?.salesData?.map(item => ({
+  const salesChartData = sales?.map(item => ({
     period: salesGroupBy === 'day' 
-      ? `${item._id?.month}/${item._id?.day}` 
+      ? `${item._id?.month || 12}/${item._id?.day || 1}` 
       : salesGroupBy === 'week' 
-        ? `Week ${item._id?.week}` 
-        : `${item._id?.year}-${item._id?.month}`,
+        ? `Week ${item._id?.week || 1}` 
+        : `${item._id?.year || 2024}-${item._id?.month || 12}`,
     sales: item.revenue || 0,
     orders: item.orders || 0
   })) || [];
 
-  const topProductsData = productData?.topProducts?.slice(0, 5) || [];
-  const orderStatusData = orderData?.orderStatusDistribution?.map(item => ({
+  const topProductsData = products?.slice(0, 5) || [];
+  const orderStatusData = orders?.map(item => ({
     status: item._id,
     count: item.count
   })) || [];
 
-  const customerLocationData = customerData?.customerLocation?.slice(0, 5) || [];
+  const customerLocationData = customers?.customerLocation?.slice(0, 5) || [];
   
   // Colors for charts
   const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8', '#82ca9d'];
@@ -423,9 +497,9 @@ const SellerAnalyticsDashboard = () => {
   ];
   
   // Render loading state
-  if (dashboardLoading && salesLoading && productLoading && orderLoading && customerLoading) {
+  if (!isUsingMockData && dashboardLoading && salesLoading && productLoading && orderLoading && customerLoading) {
     return (
-      <Box display="flex" flexDirection="column" justifyContent="center" alignItems="center" style={{ minHeight: '60vh' }}>
+      <Box display="flex" flexDirection="column" justifyContent="center" alignItems="center" style={{ minHeight: '60vh', marginLeft: '12px' }}>
         <CircularProgress size={60} thickness={4} sx={{ color: 'primary.main' }} />
         <Typography variant="h6" color="textSecondary" sx={{ mt: 2 }}>
           Loading analytics data...
@@ -434,27 +508,13 @@ const SellerAnalyticsDashboard = () => {
     );
   }
   
-  // Render error state
-  if (dashboardError || salesError || productError || orderError || customerError) {
-    return (
-      <Box style={{ padding: '24px' }}>
-        <Alert 
-          severity="error" 
-          style={{ marginBottom: '16px', borderRadius: '12px' }}
-          action={
-            <Button color="inherit" size="small" onClick={handleApplyFilters}>
-              RETRY
-            </Button>
-          }
-        >
-          Error loading analytics data. Please try again.
-        </Alert>
-      </Box>
-    );
-  }
-  
   return (
-    <Box sx={{ p: isSmallMobile ? 2 : 3, background: theme.palette.background.default, minHeight: '100vh' }}>
+    <Box sx={{ 
+      p: isSmallMobile ? 2 : 3, 
+      background: theme.palette.background.default, 
+      minHeight: '100vh',
+      marginLeft: '12px'
+    }}>
       {/* Header Section */}
       <Box display="flex" justifyContent="space-between" alignItems="center" flexWrap="wrap" mb={4}>
         <Box>
@@ -463,8 +523,17 @@ const SellerAnalyticsDashboard = () => {
             <Typography variant="h4" fontWeight="800" gutterBottom color="primary">
               Analytics Dashboard
             </Typography>
+            {isUsingMockData && (
+              <Chip 
+                label="Demo Mode" 
+                color="warning" 
+                size="small" 
+                variant="outlined"
+                sx={{ ml: 2 }}
+              />
+            )}
           </Box>
-          <Typography variant="body1" color="textSecondary" sx={{ maxWidth: '600px' }}>
+          <Typography variant="body1" color="textSecondary" sx={{ maxWidth: '600px', marginLeft: '4px' }}>
             Track your business performance and make data-driven decisions with real-time insights
           </Typography>
         </Box>
@@ -497,6 +566,21 @@ const SellerAnalyticsDashboard = () => {
         </Box>
       </Box>
       
+      {/* Show warning if using mock data */}
+      {isUsingMockData && (
+        <Alert 
+          severity="info" 
+          sx={{ mb: 3, borderRadius: 2 }}
+          action={
+            <Button color="inherit" size="small" onClick={() => setIsUsingMockData(false)}>
+              Try API Again
+            </Button>
+          }
+        >
+          Using demo data. Connect to your backend API to see real analytics.
+        </Alert>
+      )}
+      
       {/* Date Range Selector */}
       <Paper 
         elevation={0} 
@@ -506,7 +590,7 @@ const SellerAnalyticsDashboard = () => {
           background: `linear-gradient(135deg, ${alpha(theme.palette.background.paper, 0.8)} 0%, ${alpha(theme.palette.background.paper, 0.9)} 100%)`,
           borderRadius: 3,
           border: `1px solid ${alpha(theme.palette.primary.main, 0.1)}`,
-          boxShadow: `0 5px 15px ${alpha(theme.palette.primary.main, 0.05)}`
+          boxShadow: `0 5px 15px ${alpha(theme.palette.primary.main, 0.05)}`,
         }}
       >
         <Box display="flex" justifyContent="space-between" alignItems="center" flexWrap="wrap" mb={2}>
@@ -544,10 +628,10 @@ const SellerAnalyticsDashboard = () => {
         <Grid item xs={12} sm={6} md={3}>
           <MetricCard
             title="Total Revenue"
-            value={formatCurrency(dashboardData?.overview?.totalRevenue || 0)}
+            value={formatCurrency(dashboard?.overview?.totalRevenue || 0)}
             change={10}
             isPositive={true}
-            isLoading={dashboardLoading}
+            isLoading={dashboardLoading && !isUsingMockData}
             icon={<AttachMoney />}
             color="primary"
             subtitle="All-time earnings"
@@ -556,10 +640,10 @@ const SellerAnalyticsDashboard = () => {
         <Grid item xs={12} sm={6} md={3}>
           <MetricCard
             title="Total Orders"
-            value={dashboardData?.overview?.totalOrders || 0}
+            value={dashboard?.overview?.totalOrders || 0}
             change={5}
             isPositive={true}
-            isLoading={dashboardLoading}
+            isLoading={dashboardLoading && !isUsingMockData}
             icon={<ShoppingCart />}
             color="secondary"
             subtitle="Completed orders"
@@ -568,10 +652,10 @@ const SellerAnalyticsDashboard = () => {
         <Grid item xs={12} sm={6} md={3}>
           <MetricCard
             title="Avg Order Value"
-            value={formatCurrency(dashboardData?.overview?.averageOrderValue || 0)}
+            value={formatCurrency(dashboard?.overview?.averageOrderValue || 0)}
             change={2}
             isPositive={true}
-            isLoading={dashboardLoading}
+            isLoading={dashboardLoading && !isUsingMockData}
             icon={<Store />}
             color="success"
             subtitle="Per transaction"
@@ -580,10 +664,10 @@ const SellerAnalyticsDashboard = () => {
         <Grid item xs={12} sm={6} md={3}>
           <MetricCard
             title="Conversion Rate"
-            value={`${dashboardData?.overview?.conversionRate || 3.2}%`}
+            value={`${dashboard?.overview?.conversionRate || 3.2}%`}
             change={8}
             isPositive={true}
-            isLoading={dashboardLoading}
+            isLoading={dashboardLoading && !isUsingMockData}
             icon={<TrendingUp />}
             color="info"
             subtitle="Visitor to customer"
@@ -642,8 +726,8 @@ const SellerAnalyticsDashboard = () => {
         
         {/* Customer Acquisition Chart */}
         <Grid item xs={12} lg={4}>
-          <GradientCard>
-            <CardContent sx={{ p: 3 }}>
+          <GradientCard sx={{ height: '100%' }}>
+            <CardContent sx={{ p: 3, height: '100%', display: 'flex', flexDirection: 'column' }}>
               <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
                 <Typography variant="h6" fontWeight="600" color="primary">
                   Customer Acquisition
@@ -652,7 +736,7 @@ const SellerAnalyticsDashboard = () => {
                   <ArrowForward />
                 </IconButton>
               </Box>
-              <Box sx={{ height: 300, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <Box sx={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 <ResponsiveContainer width="100%" height="100%">
                   <RadialBarChart innerRadius="40%" outerRadius="100%" barSize={16} data={customerAcquisitionData}>
                     <RadialBar minAngle={15} background clockWise dataKey="value" />
@@ -666,9 +750,9 @@ const SellerAnalyticsDashboard = () => {
                   </RadialBarChart>
                 </ResponsiveContainer>
               </Box>
-              <Box textAlign="center" mt={-4}>
+              <Box textAlign="center" mt={2}>
                 <Typography variant="h6" fontWeight="700">
-                  {customerData?.totalCustomers || 0}
+                  {customers?.totalCustomers || 0}
                 </Typography>
                 <Typography variant="body2" color="textSecondary">
                   Total Customers
@@ -683,15 +767,15 @@ const SellerAnalyticsDashboard = () => {
       <Grid container spacing={3} sx={{ mb: 4 }}>
         {/* Order Status Distribution */}
         <Grid item xs={12} md={6}>
-          <GradientCard>
-            <CardContent sx={{ p: 3 }}>
+          <GradientCard sx={{ height: '100%' }}>
+            <CardContent sx={{ p: 3, height: '100%', display: 'flex', flexDirection: 'column' }}>
               <Box display="flex" alignItems="center" gap={1} mb={2}>
                 <LocalShipping sx={{ color: 'primary.main' }} />
                 <Typography variant="h6" fontWeight="600" color="primary">
                   Order Status Distribution
                 </Typography>
               </Box>
-              <Box sx={{ height: 300, mt: 2 }}>
+              <Box sx={{ height: 300, mt: 2, flex: 1 }}>
                 {orderStatusData.length > 0 ? (
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={orderStatusData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
@@ -721,16 +805,16 @@ const SellerAnalyticsDashboard = () => {
         
         {/* Customer Insights */}
         <Grid item xs={12} md={6}>
-          <GradientCard>
-            <CardContent sx={{ p: 3 }}>
+          <GradientCard sx={{ height: '100%' }}>
+            <CardContent sx={{ p: 3, height: '100%', display: 'flex', flexDirection: 'column' }}>
               <Box display="flex" alignItems="center" gap={1} mb={2}>
                 <People sx={{ color: 'primary.main' }} />
                 <Typography variant="h6" fontWeight="600" color="primary">
                   Customer Insights
                 </Typography>
               </Box>
-              {customerLoading ? (
-                <Box display="flex" justifyContent="center" alignItems="center" height={300}>
+              {customerLoading && !isUsingMockData ? (
+                <Box display="flex" justifyContent="center" alignItems="center" height={300} flex={1}>
                   <CircularProgress />
                 </Box>
               ) : (
@@ -740,7 +824,7 @@ const SellerAnalyticsDashboard = () => {
                       <Box sx={{ textAlign: 'center', p: 2, background: alpha(theme.palette.primary.main, 0.1), borderRadius: 3 }}>
                         <PersonAdd sx={{ color: 'primary.main', mb: 1, fontSize: 32 }} />
                         <Typography variant="h4" fontWeight="700">
-                          {customerData?.totalCustomers || 0}
+                          {customers?.totalCustomers || 0}
                         </Typography>
                         <Typography variant="body2" color="textSecondary">
                           Total Customers
@@ -751,7 +835,7 @@ const SellerAnalyticsDashboard = () => {
                       <Box sx={{ textAlign: 'center', p: 2, background: alpha(theme.palette.success.main, 0.1), borderRadius: 3 }}>
                         <TrendingUp sx={{ color: 'success.main', mb: 1, fontSize: 32 }} />
                         <Typography variant="h4" fontWeight="700">
-                          {customerData?.repeatPurchaseRate || 0}%
+                          {customers?.repeatPurchaseRate || 0}%
                         </Typography>
                         <Typography variant="body2" color="textSecondary">
                           Repeat Rate
@@ -760,12 +844,12 @@ const SellerAnalyticsDashboard = () => {
                     </Grid>
                   </Grid>
                   
-                  {customerData?.topCustomers && customerData.topCustomers.length > 0 && (
+                  {customers?.topCustomers && customers.topCustomers.length > 0 && (
                     <>
                       <Typography variant="subtitle1" fontWeight="600" sx={{ mb: 2 }}>
                         Top Customers
                       </Typography>
-                      <TableContainer>
+                      <TableContainer sx={{ flex: 1 }}>
                         <Table size="small">
                           <TableHead>
                             <TableRow>
@@ -775,7 +859,7 @@ const SellerAnalyticsDashboard = () => {
                             </TableRow>
                           </TableHead>
                           <TableBody>
-                            {customerData.topCustomers.slice(0, 3).map((customer, index) => (
+                            {customers.topCustomers.slice(0, 3).map((customer, index) => (
                               <TableRow key={index} hover sx={{ '&:last-child td, &:last-child th': { border: 0 } }}>
                                 <TableCell>
                                   <Box display="flex" alignItems="center">
@@ -815,11 +899,11 @@ const SellerAnalyticsDashboard = () => {
               View All
             </Button>
           </Box>
-          {productLoading ? (
+          {productLoading && !isUsingMockData ? (
             <Box display="flex" justifyContent="center" alignItems="center" height={200}>
               <CircularProgress />
             </Box>
-          ) : productData?.topProducts && productData.topProducts.length > 0 ? (
+          ) : topProductsData && topProductsData.length > 0 ? (
             <TableContainer>
               <Table>
                 <TableHead>
@@ -832,8 +916,8 @@ const SellerAnalyticsDashboard = () => {
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {productData.topProducts.map((product, index) => {
-                    const performance = Math.min(100, (product.revenue / (productData.topProducts[0]?.revenue || 1)) * 100);
+                  {topProductsData.map((product, index) => {
+                    const performance = Math.min(100, (product.revenue / (topProductsData[0]?.revenue || 1)) * 100);
                     return (
                       <TableRow key={index} hover>
                         <TableCell>
