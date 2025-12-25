@@ -170,11 +170,11 @@ export default function Footer() {
             {/* Social Links */}
             <div className="flex flex-wrap justify-center sm:justify-start items-center gap-3 mb-6">
               {[
-                { icon: FaFacebookF, href: "https://www.facebook.com/share/1FLtXZhQKP/?mibextid=wwXIfr", color: "hover:text-blue-400" },
+                { icon: FaFacebookF, href: "https://www.facebook.com/", color: "hover:text-blue-400" },
                 { icon: FaTwitter, href: "https://twitter.com/yourprofile", color: "hover:text-cyan-400" },
-                { icon: FaInstagram, href: "https://www.instagram.com/bustard.pk?igsh=b2xpb284OTNicXI3&utm_source=qr", color: "hover:text-pink-400" },
-                { icon: FaYoutube, href: "https://www.youtube.com/@bustardpk", color: "hover:text-red-400" },
-                { icon: FaTiktok, href: "https://www.tiktok.com/@busterd.pk?_t=ZS-90Qjp5wxYTH&_r=1", color: "hover:text-purple-400" },
+                { icon: FaInstagram, href: "https://www.instagram.com/", color: "hover:text-pink-400" },
+                { icon: FaYoutube, href: "https://www.youtube.com/", color: "hover:text-red-400" },
+                { icon: FaTiktok, href: "https://www.tiktok.com/", color: "hover:text-purple-400" },
               ].map((social, index) => {
                 const Icon = social.icon;
                 return (

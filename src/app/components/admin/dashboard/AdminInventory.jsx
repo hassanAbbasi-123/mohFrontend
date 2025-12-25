@@ -2,7 +2,6 @@
 import { useState } from "react";
 import {
   useGetAllInventoryQuery,
-  useGetSellerInventoryQuery,
 } from "@/store/features/inventoryApi";
 
 export default function AdminInventory() {
@@ -13,10 +12,7 @@ export default function AdminInventory() {
   const [sellerCurrentPage, setSellerCurrentPage] = useState(1);
   const [sellerItemsPerPage, setSellerItemsPerPage] = useState(10);
 
-  // ✅ FIX: Always call the hook unconditionally, use skip option for conditional fetching
-  const { data: sellerData } = useGetSellerInventoryQuery(storeName, {
-    skip: !storeName,
-  });
+  // Removed the unused useGetSellerInventoryQuery hook to prevent CastError 500s
 
   if (isLoading) return (
     <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '50vh' }}>
@@ -39,10 +35,10 @@ export default function AdminInventory() {
     </div>
   );
 
-  // ✅ Filter products by storeName (case-insensitive)
+  // ✅ SAFE FILTER: use empty string fallback to prevent TypeError
   const filteredProducts = storeName
     ? data?.products?.filter((p) =>
-        p.seller?.storeName?.toLowerCase().includes(storeName.toLowerCase())
+        (p.seller?.storeName || '').toLowerCase().includes(storeName.toLowerCase())
       ) || []
     : [];
 
@@ -287,7 +283,7 @@ export default function AdminInventory() {
                     padding: '1rem', 
                     color: '#1f2937',
                     fontSize: '0.875rem'
-                  }}>{p.seller?.storeName}</td>
+                  }}>{p.seller?.storeName || 'N/A'}</td>
                   <td style={{ 
                     padding: '1rem', 
                     color: '#1f2937',
@@ -474,10 +470,10 @@ export default function AdminInventory() {
               }}>
                 <div>
                   <h4 style={{ fontSize: '1.125rem', fontWeight: '600', color: '#0369a1', marginBottom: '0.25rem' }}>
-                    Seller: {filteredProducts[0].seller?.storeName}
+                    Seller: {filteredProducts[0].seller?.storeName || 'Unknown'}
                   </h4>
                   <p style={{ color: '#6b7280', fontSize: '0.875rem' }}>
-                    Email: {filteredProducts[0].seller?.user?.email}
+                    Email: {filteredProducts[0].seller?.user?.email || 'N/A'}
                   </p>
                 </div>
                 

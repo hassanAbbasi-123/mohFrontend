@@ -1,10 +1,7 @@
-/* SellerProducts.jsx */
 "use client";
-
 import { useState, useEffect } from "react";
 import ProductForm from "@/components/products/ProductForm";
 import CouponModal from "@/components/products/CouponModal";
-
 import {
   useGetMyProductsQuery,
   useCreateProductMutation,
@@ -15,24 +12,38 @@ import {
   useApplyCouponMutation,
   useRemoveCouponFromSellerProductMutation,
 } from "@/store/features/productApi";
-
 import { useGetAllCategoriesWithSubForSellerQuery } from "@/store/features/categoryApi";
-
-const API_BASE = process.env.NEXT_PUBLIC_API_URL;
 
 const SellerProducts = () => {
   const [user, setUser] = useState(null);
   const [token, setToken] = useState(null);
-
   const [editingProduct, setEditingProduct] = useState(null);
   const [showForm, setShowForm] = useState(false);
   const [showCouponModal, setShowCouponModal] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [filter, setFilter] = useState("all");
   const [viewProduct, setViewProduct] = useState(null);
-
-  // Success message
   const [successMessage, setSuccessMessage] = useState("");
+
+  // Helper function to optimize Cloudinary URLs
+  const optimizeCloudinaryImage = (url, width = 600, height = 400) => {
+    if (!url || typeof url !== 'string') return '/placeholder.jpg';
+    
+    // If it's already a Cloudinary URL with transformations, return as-is
+    if (url.includes('upload/') && url.includes('cloudinary.com')) {
+      // Check if already has transformations
+      if (url.includes('/upload/w_')) {
+        return url;
+      }
+      // Add transformations for better performance
+      const parts = url.split('/upload/');
+      if (parts.length === 2) {
+        return `${parts[0]}/upload/w_${width},h_${height},c_fill,f_auto,q_auto/${parts[1]}`;
+      }
+    }
+    
+    return url;
+  };
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -55,10 +66,18 @@ const SellerProducts = () => {
   // Normalize backend response into an array
   const products = Array.isArray(productsData) ? productsData : [];
 
-  // Debug log to check what backend is returning
+  // Debug log to check Cloudinary URLs
   useEffect(() => {
-    console.log("Fetched productsData:", productsData);
-    console.log("Fetched categoriesData:", categoriesData);
+    if (productsData && productsData.length > 0) {
+      const sample = productsData[0];
+      console.log("Cloudinary Image Debug:", {
+        imageUrl: sample?.image,
+        isCloudinary: sample?.image?.includes('cloudinary.com'),
+        hasProtocol: sample?.image?.startsWith('http'),
+        galleryCount: sample?.gallery?.length,
+        galleryUrls: sample?.gallery?.slice(0, 2)
+      });
+    }
   }, [productsData, categoriesData]);
 
   const [createProduct] = useCreateProductMutation();
@@ -81,7 +100,6 @@ const SellerProducts = () => {
     </div>
   );
 
-  // Show error only if there is a network/server failure
   if (error && !products.length) {
     return (
       <div className="flex justify-center items-center min-h-screen">
@@ -101,6 +119,7 @@ const SellerProducts = () => {
     if (filter === "approved") return p.status === "approved";
     if (filter === "pending") return p.status === "pending";
     if (filter === "rejected") return p.status === "rejected";
+    if (filter === "out-of-season") return p.status === "out-of-season";
     if (filter === "inStock") return p.inStock;
     if (filter === "outOfStock") return !p.inStock;
     if (filter === "onSale") return p.isOnSale;
@@ -184,8 +203,8 @@ const SellerProducts = () => {
       <div className="container mx-auto px-4 py-8">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
           <div>
-            <h1 className="text-3xl ml-10 font-bold text-gray-800 mb-1">My Products</h1>
-            <p className="text-gray-600 ml-10">Manage your product inventory and promotions</p>
+            <h1 className="text-3xl font-bold text-gray-800 mb-1">My Products</h1>
+            <p className="text-gray-600">Manage your product inventory and promotions</p>
           </div>
           <button
             onClick={() => setShowForm(true)}
@@ -207,7 +226,7 @@ const SellerProducts = () => {
           </div>
         )}
 
-        <div className="bg-white rounded-xl ml-9 shadow-sm p-6 mb-8 border border-gray-100">
+        <div className="bg-white rounded-xl shadow-sm p-6 mb-8 border border-gray-100">
           <div className="flex flex-col sm:flex-row sm:items-center gap-4">
             <label htmlFor="filter" className="font-medium text-gray-700 min-w-[70px]">
               Filter:
@@ -222,11 +241,12 @@ const SellerProducts = () => {
               <option value="approved">Approved</option>
               <option value="pending">Pending</option>
               <option value="rejected">Rejected</option>
+              <option value="out-of-season">Out of Season</option>
               <option value="inStock">In Stock</option>
               <option value="outOfStock">Out of Stock</option>
               <option value="onSale">On Sale</option>
             </select>
-            
+           
             <div className="text-sm text-gray-500 ml-auto">
               {filteredProducts.length} {filteredProducts.length === 1 ? 'product' : 'products'} found
             </div>
@@ -234,7 +254,7 @@ const SellerProducts = () => {
         </div>
 
         {showForm && (
-          <ProductForm 
+          <ProductForm
             product={editingProduct}
             categories={categories}
             onSubmit={editingProduct ? handleUpdateProduct : handleCreateProduct}
@@ -271,11 +291,22 @@ const SellerProducts = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
                 <div>
                   <div className="rounded-xl overflow-hidden mb-4 border border-gray-200">
-                    <img
-                      src={`${API_BASE}/${viewProduct.image}`}
-                      alt={viewProduct.name}
-                      className="w-full h-64 object-cover"
-                    />
+                    {viewProduct.image ? (
+                      <img
+                        src={optimizeCloudinaryImage(viewProduct.image, 800, 600)}
+                        alt={viewProduct.name}
+                        className="w-full h-64 object-cover"
+                        onError={(e) => {
+                          e.target.src = '/placeholder.jpg';
+                        }}
+                      />
+                    ) : (
+                      <div className="w-full h-64 bg-gray-100 flex items-center justify-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
+                      </div>
+                    )}
                   </div>
                   {viewProduct.gallery && viewProduct.gallery.length > 0 && (
                     <div>
@@ -284,9 +315,12 @@ const SellerProducts = () => {
                         {viewProduct.gallery.map((img, idx) => (
                           <div key={idx} className="rounded-lg overflow-hidden border border-gray-200">
                             <img
-                              src={`${API_BASE}/${img}`}
+                              src={optimizeCloudinaryImage(img, 400, 300)}
                               alt={`Gallery ${idx}`}
                               className="w-full h-32 object-cover"
+                              onError={(e) => {
+                                e.target.src = '/placeholder.jpg';
+                              }}
                             />
                           </div>
                         ))}
@@ -299,7 +333,7 @@ const SellerProducts = () => {
                     <h3 className="font-medium text-gray-700 mb-3">Description</h3>
                     <p className="text-gray-600">{viewProduct.description}</p>
                   </div>
-                  
+                 
                   <div className="space-y-4">
                     <div>
                       <h3 className="font-medium text-gray-700 mb-2">Details</h3>
@@ -308,58 +342,141 @@ const SellerProducts = () => {
                           <span className="text-gray-600">Price:</span>
                           <span className="font-medium">RS{viewProduct.price}</span>
                         </div>
-                        
+                       
+                        <div className="flex justify-between">
+                          <span className="text-gray-600">Variety:</span>
+                          <span className="font-medium">{viewProduct.variety || "—"}</span>
+                        </div>
+                       
+                        <div className="flex justify-between">
+                          <span className="text-gray-600">Unit:</span>
+                          <span className="font-medium">{viewProduct.unit || "—"}</span>
+                        </div>
+                       
+                        <div className="flex justify-between">
+                          <span className="text-gray-600">Organic:</span>
+                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${viewProduct.isOrganic ? "bg-green-100 text-green-800" : "bg-gray-100 text-gray-800"}`}>
+                            {viewProduct.isOrganic ? "Yes" : "No"}
+                          </span>
+                        </div>
+                       
+                        <div className="flex justify-between">
+                          <span className="text-gray-600">Seasonal:</span>
+                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${viewProduct.isSeasonal ? "bg-blue-100 text-blue-800" : "bg-gray-100 text-gray-800"}`}>
+                            {viewProduct.isSeasonal ? "Yes" : "No"}
+                          </span>
+                        </div>
+                       
+                        <div className="flex justify-between">
+                          <span className="text-gray-600">Harvest Date:</span>
+                          <span className="font-medium">{viewProduct.harvestDate ? new Date(viewProduct.harvestDate).toLocaleDateString() : "—"}</span>
+                        </div>
+                       
+                        <div className="flex justify-between">
+                          <span className="text-gray-600">Best Before:</span>
+                          <span className="font-medium">{viewProduct.bestBefore ? new Date(viewProduct.bestBefore).toLocaleDateString() : "—"}</span>
+                        </div>
+                       
+                        <div className="flex justify-between">
+                          <span className="text-gray-600">Storage:</span>
+                          <span className="font-medium">{viewProduct.storageInstructions || "—"}</span>
+                        </div>
+                       
+                        <div className="flex justify-between">
+                          <span className="text-gray-600">Min Order Qty:</span>
+                          <span className="font-medium">{viewProduct.minOrderQuantity || 0.25} {viewProduct.unit || "units"}</span>
+                        </div>
+                       
+                        <div className="flex justify-between">
+                          <span className="text-gray-600">Low Stock Threshold:</span>
+                          <span className="font-medium">{viewProduct.lowStockThreshold || 5} {viewProduct.unit || "units"}</span>
+                        </div>
+                       
+                        <div className="flex justify-between">
+                          <span className="text-gray-600">Quantity:</span>
+                          <span className="font-medium">{viewProduct.quantity} {viewProduct.unit || "units"}</span>
+                        </div>
+                       
                         <div className="flex justify-between">
                           <span className="text-gray-600">Status:</span>
                           <span
-                            className={`px-3 py-1 rounded-full text-xs font-medium ${
-                              viewProduct.status === "approved"
+                            className={`px-3 py-1 rounded-full text-xs font-medium ${viewProduct.status === "approved"
                                 ? "bg-green-100 text-green-800"
                                 : viewProduct.status === "pending"
-                                ? "bg-yellow-100 text-yellow-800"
-                                : "bg-red-100 text-red-800"
-                            }`}
+                                  ? "bg-yellow-100 text-yellow-800"
+                                  : viewProduct.status === "rejected"
+                                    ? "bg-red-100 text-red-800"
+                                    : viewProduct.status === "out-of-season"
+                                      ? "bg-purple-100 text-purple-800"
+                                      : "bg-gray-100 text-gray-800"
+                              }`}
                           >
                             {viewProduct.status === "approved"
                               ? "Approved"
                               : viewProduct.status === "pending"
-                              ? "Waiting for approval"
-                              : "Rejected"}
+                                ? "Waiting for approval"
+                                : viewProduct.status === "rejected"
+                                  ? "Rejected"
+                                  : viewProduct.status === "out-of-season"
+                                    ? "Out of Season"
+                                    : "Unknown"}
                           </span>
                         </div>
-                        
+                       
                         <div className="flex justify-between">
                           <span className="text-gray-600">Stock:</span>
                           <span
-                            className={`px-3 py-1 rounded-full text-xs font-medium ${
-                              viewProduct.inStock
+                            className={`px-3 py-1 rounded-full text-xs font-medium ${viewProduct.inStock
                                 ? "bg-green-100 text-green-800"
                                 : "bg-red-100 text-red-800"
-                            }`}
+                              }`}
                           >
                             {viewProduct.inStock ? "In Stock" : "Out of Stock"}
                           </span>
                         </div>
-                        
+                       
                         <div className="flex justify-between">
                           <span className="text-gray-600">Sale Status:</span>
                           <span
-                            className={`px-3 py-1 rounded-full text-xs font-medium ${
-                              viewProduct.isOnSale
+                            className={`px-3 py-1 rounded-full text-xs font-medium ${viewProduct.isOnSale
                                 ? "bg-blue-100 text-blue-800"
                                 : "bg-gray-100 text-gray-800"
-                            }`}
+                              }`}
                           >
                             {viewProduct.isOnSale ? "On Sale" : "Regular Price"}
                           </span>
                         </div>
-                        
+                       
                         {viewProduct.features && viewProduct.features.length > 0 && (
                           <div>
                             <span className="text-gray-600">Features:</span>
                             <ul className="mt-1 list-disc list-inside text-sm text-gray-700">
                               {viewProduct.features.map((feature, index) => (
                                 <li key={index}>{feature}</li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+                       
+                        {viewProduct.attributes && Object.keys(viewProduct.attributes).length > 0 && (
+                          <div>
+                            <span className="text-gray-600">Attributes:</span>
+                            <ul className="mt-1 list-disc list-inside text-sm text-gray-700">
+                              {Object.entries(viewProduct.attributes).map(([key, value]) => (
+                                <li key={key}>{key}: {value}</li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+                       
+                        {viewProduct.stockHistory && viewProduct.stockHistory.length > 0 && (
+                          <div>
+                            <span className="text-gray-600">Recent Stock Changes:</span>
+                            <ul className="mt-1 space-y-1 text-sm text-gray-700">
+                              {viewProduct.stockHistory.slice(-3).reverse().map((history, index) => (
+                                <li key={index}>
+                                  {new Date(history.date).toLocaleDateString()}: {history.change > 0 ? '+' : ''}{history.change} ({history.reason})
+                                </li>
                               ))}
                             </ul>
                           </div>
@@ -382,9 +499,12 @@ const SellerProducts = () => {
               <div className="h-48 bg-gray-100 overflow-hidden relative">
                 {product.image ? (
                   <img
-                    src={`${API_BASE}/${product.image}`}
+                    src={optimizeCloudinaryImage(product.image, 400, 300)}
                     alt={product.name}
                     className="w-full h-full object-cover transition-transform duration-300 hover:scale-105"
+                    onError={(e) => {
+                      e.target.src = '/placeholder.jpg';
+                    }}
                   />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center text-gray-400 bg-gray-100">
@@ -393,48 +513,59 @@ const SellerProducts = () => {
                     </svg>
                   </div>
                 )}
-                
+               
                 <div className="absolute top-3 left-3 flex flex-col gap-2">
                   <span
-                    className={`px-2.5 py-1 rounded-full text-xs font-medium ${
-                      product.status === "approved"
+                    className={`px-2.5 py-1 rounded-full text-xs font-medium ${product.status === "approved"
                         ? "bg-green-100 text-green-800"
                         : product.status === "pending"
-                        ? "bg-yellow-100 text-yellow-800"
-                        : "bg-red-100 text-red-800"
-                    }`}
+                          ? "bg-yellow-100 text-yellow-800"
+                          : product.status === "rejected"
+                            ? "bg-red-100 text-red-800"
+                            : product.status === "out-of-season"
+                              ? "bg-purple-100 text-purple-800"
+                              : "bg-gray-100 text-gray-800"
+                      }`}
                   >
                     {product.status === "approved"
                       ? "Approved"
                       : product.status === "pending"
-                      ? "Pending"
-                      : "Rejected"}
+                        ? "Pending"
+                        : product.status === "rejected"
+                          ? "Rejected"
+                          : product.status === "out-of-season"
+                            ? "Out of Season"
+                            : "Unknown"}
                   </span>
-                  
+                 
                   {product.isOnSale && (
                     <span className="px-2.5 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
                       On Sale
                     </span>
                   )}
+                 
+                  {product.isSeasonal && (
+                    <span className="px-2.5 py-1 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800">
+                      Seasonal
+                    </span>
+                  )}
                 </div>
-                
+               
                 <div className="absolute top-3 right-3">
                   <span
-                    className={`px-2.5 py-1 rounded-full text-xs font-medium ${
-                      product.inStock ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"
-                    }`}
+                    className={`px-2.5 py-1 rounded-full text-xs font-medium ${product.inStock ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"
+                      }`}
                   >
                     {product.inStock ? "In Stock" : "Out of Stock"}
                   </span>
                 </div>
               </div>
-              
+             
               <div className="p-5">
                 <h3 className="text-lg font-semibold text-gray-800 mb-2 line-clamp-1">
                   {product.name}
                 </h3>
                 <p className="text-blue-600 font-medium text-xl mb-4">RS{product.price}</p>
-
                 {product.coupons && product.coupons.length > 0 && (
                   <div className="mb-4 p-3 bg-purple-50 rounded-lg border border-purple-100">
                     <h4 className="font-medium mb-2 text-purple-700 text-sm">Applied Coupons:</h4>
@@ -442,7 +573,7 @@ const SellerProducts = () => {
                       {product.coupons.map((coupon) => (
                         <div key={coupon._id} className="flex justify-between items-center">
                           <span className="text-xs bg-purple-100 text-purple-800 px-2.5 py-1 rounded-full font-medium">
-                            {coupon.code}
+                            {coupon.code} {coupon.discountType === 'percentage' ? `(${coupon.discountValue}%)` : `(₹${coupon.discountValue})`}
                           </span>
                           <button
                             onClick={() => handleRemoveCoupon(product._id, coupon._id)}
@@ -458,7 +589,6 @@ const SellerProducts = () => {
                     </div>
                   </div>
                 )}
-
                 <div className="grid grid-cols-2 gap-2">
                   <button
                     onClick={() => {
@@ -474,11 +604,10 @@ const SellerProducts = () => {
                   </button>
                   <button
                     onClick={() => handleToggleStock(product._id)}
-                    className={`px-3 py-2.5 rounded-lg text-sm transition-colors flex items-center justify-center ${
-                      product.inStock
+                    className={`px-3 py-2.5 rounded-lg text-sm transition-colors flex items-center justify-center ${product.inStock
                         ? "bg-red-100 text-red-700 hover:bg-red-200"
                         : "bg-green-100 text-green-700 hover:bg-green-200"
-                    }`}
+                      }`}
                   >
                     {product.inStock ? (
                       <>
@@ -498,11 +627,10 @@ const SellerProducts = () => {
                   </button>
                   <button
                     onClick={() => handleToggleSale(product._id)}
-                    className={`px-3 py-2.5 rounded-lg text-sm transition-colors flex items-center justify-center ${
-                      product.isOnSale
+                    className={`px-3 py-2.5 rounded-lg text-sm transition-colors flex items-center justify-center ${product.isOnSale
                         ? "bg-gray-100 text-gray-700 hover:bg-gray-200"
                         : "bg-blue-100 text-blue-700 hover:bg-blue-200"
-                    }`}
+                      }`}
                   >
                     {product.isOnSale ? (
                       <>
@@ -558,7 +686,7 @@ const SellerProducts = () => {
         </div>
 
         {filteredProducts?.length === 0 && (
-          <div className="text-center ml-10 py-16 bg-white rounded-xl shadow-sm border border-gray-100 mt-6">
+          <div className="text-center py-16 bg-white rounded-xl shadow-sm border border-gray-100 mt-6">
             <svg xmlns="http://www.w3.org/2000/svg" className="h-16 w-16 mx-auto text-gray-400 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-16M9 9h6m-6 4h6m-6 4h6" />
             </svg>

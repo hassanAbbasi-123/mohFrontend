@@ -1,28 +1,33 @@
 'use client';
 
-import { useState, useEffect, useRef, useMemo } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { 
   Carrot, Apple, Sprout, Wheat, Zap, Sparkles, Flame, Crown, Star, ArrowRight, ShoppingCart, Heart, Eye,
-  ChevronLeft, ChevronRight, TrendingUp, Shield, Truck, Clock, Leaf
+  ChevronLeft, ChevronRight, TrendingUp, Shield, Truck, Clock, Leaf, Layers, Menu, Grid, Filter
 } from 'lucide-react';
 import { useGetApprovedProductsQuery } from '@/store/features/productApi';
 import { useGetAllCategoriesQuery } from '@/store/features/categoryApi';
 import { motion, AnimatePresence } from 'framer-motion';
 
 /**
- * FeaturedProductsWithSidebar (Categories Row on Top)
+ * FeaturedProductsWithSidebar (Child Categories Row on Top)
  */
 
 export default function FeaturedProductsWithSidebar({ addToCart, setQuickViewProduct }) {
   const [activeCategory, setActiveCategory] = useState(null);
   const [hoveredProduct, setHoveredProduct] = useState(null);
   const [currentSlide, setCurrentSlide] = useState(0);
+  const [showMobileCategories, setShowMobileCategories] = useState(false);
+  const [mobileViewMode, setMobileViewMode] = useState('grid'); // 'grid' or 'list'
   const scrollContainerRef = useRef(null);
   
   // Fetch categories from the categoryApi
   const { data: categoriesData = [], isLoading: categoriesLoading } = useGetAllCategoriesQuery();
+  
+  // Filter only child categories (categories that have a parentCategory)
+  const childCategories = categoriesData.filter(cat => cat.parentCategory);
   
   // Auto-rotate featured products
   useEffect(() => {
@@ -32,71 +37,16 @@ export default function FeaturedProductsWithSidebar({ addToCart, setQuickViewPro
     return () => clearInterval(interval);
   }, []);
 
-  // Vegetable/Fruit category configurations
-  const categoryConfigs = {
-    Vegetables: { 
-      icon: <Carrot className="w-4 h-4" />,
+  // Child category configurations
+  const childCategoryConfigs = {
+    // Vegetables subcategories
+    'Leafy Greens': { 
+      icon: <Leaf className="w-4 h-4" />,
       bgColor: 'from-green-500/10 to-emerald-500/10',
       borderColor: 'border-green-400/30',
       iconColor: 'text-green-300',
       accentColor: 'green',
       hoverColor: 'hover:from-green-500/20 hover:to-emerald-500/20'
-    },
-    Fruits: { 
-      icon: <Apple className="w-4 h-4" />,
-      bgColor: 'from-orange-500/10 to-red-500/10',
-      borderColor: 'border-orange-400/30',
-      iconColor: 'text-orange-300',
-      accentColor: 'orange',
-      hoverColor: 'hover:from-orange-500/20 hover:to-red-500/20'
-    },
-    Seeds: { 
-      icon: <Sprout className="w-4 h-4" />,
-      bgColor: 'from-amber-500/10 to-yellow-500/10',
-      borderColor: 'border-amber-400/30',
-      iconColor: 'text-amber-300',
-      accentColor: 'amber',
-      hoverColor: 'hover:from-amber-500/20 hover:to-yellow-500/20'
-    },
-    'Dried Legumes': { 
-      icon: <Wheat className="w-4 h-4" />,
-      bgColor: 'from-amber-500/10 to-yellow-500/10',
-      borderColor: 'border-amber-400/30',
-      iconColor: 'text-amber-300',
-      accentColor: 'amber',
-      hoverColor: 'hover:from-amber-500/20 hover:to-yellow-500/20'
-    },
-    'Organic Produce': { 
-      icon: <Sparkles className="w-4 h-4" />,
-      bgColor: 'from-lime-500/10 to-green-500/10',
-      borderColor: 'border-lime-400/30',
-      iconColor: 'text-lime-300',
-      accentColor: 'lime',
-      hoverColor: 'hover:from-lime-500/20 hover:to-green-500/20'
-    },
-    'Fresh Herbs': { 
-      icon: <Leaf className="w-4 h-4" />,
-      bgColor: 'from-emerald-500/10 to-teal-500/10',
-      borderColor: 'border-emerald-400/30',
-      iconColor: 'text-emerald-300',
-      accentColor: 'emerald',
-      hoverColor: 'hover:from-emerald-500/20 hover:to-teal-500/20'
-    },
-    'Seasonal Fruits': { 
-      icon: <Apple className="w-4 h-4" />,
-      bgColor: 'from-pink-500/10 to-rose-500/10',
-      borderColor: 'border-pink-400/30',
-      iconColor: 'text-pink-300',
-      accentColor: 'pink',
-      hoverColor: 'hover:from-pink-500/20 hover:to-rose-500/20'
-    },
-    'Leafy Greens': { 
-      icon: <Carrot className="w-4 h-4" />,
-      bgColor: 'from-green-500/10 to-lime-500/10',
-      borderColor: 'border-green-400/30',
-      iconColor: 'text-green-300',
-      accentColor: 'green',
-      hoverColor: 'hover:from-green-500/20 hover:to-lime-500/20'
     },
     'Root Vegetables': { 
       icon: <Carrot className="w-4 h-4" />,
@@ -106,11 +56,97 @@ export default function FeaturedProductsWithSidebar({ addToCart, setQuickViewPro
       accentColor: 'orange',
       hoverColor: 'hover:from-orange-500/20 hover:to-amber-500/20'
     },
+    'Tomatoes': { 
+      icon: <Apple className="w-4 h-4" />,
+      bgColor: 'from-red-500/10 to-rose-500/10',
+      borderColor: 'border-red-400/30',
+      iconColor: 'text-red-300',
+      accentColor: 'red',
+      hoverColor: 'hover:from-red-500/20 hover:to-rose-500/20'
+    },
+    'Peppers': { 
+      icon: <Flame className="w-4 h-4" />,
+      bgColor: 'from-orange-500/10 to-red-500/10',
+      borderColor: 'border-orange-400/30',
+      iconColor: 'text-orange-300',
+      accentColor: 'orange',
+      hoverColor: 'hover:from-orange-500/20 hover:to-red-500/20'
+    },
+    'Cucumbers': { 
+      icon: <Sprout className="w-4 h-4" />,
+      bgColor: 'from-lime-500/10 to-green-500/10',
+      borderColor: 'border-lime-400/30',
+      iconColor: 'text-lime-300',
+      accentColor: 'lime',
+      hoverColor: 'hover:from-lime-500/20 hover:to-green-500/20'
+    },
+    
+    // Fruits subcategories
+    'Citrus Fruits': { 
+      icon: <Apple className="w-4 h-4" />,
+      bgColor: 'from-yellow-500/10 to-orange-500/10',
+      borderColor: 'border-yellow-400/30',
+      iconColor: 'text-yellow-300',
+      accentColor: 'yellow',
+      hoverColor: 'hover:from-yellow-500/20 hover:to-orange-500/20'
+    },
+    'Berries': { 
+      icon: <Apple className="w-4 h-4" />,
+      bgColor: 'from-pink-500/10 to-purple-500/10',
+      borderColor: 'border-pink-400/30',
+      iconColor: 'text-pink-300',
+      accentColor: 'pink',
+      hoverColor: 'hover:from-pink-500/20 hover:to-purple-500/20'
+    },
+    'Tropical Fruits': { 
+      icon: <Sparkles className="w-4 h-4" />,
+      bgColor: 'from-amber-500/10 to-yellow-500/10',
+      borderColor: 'border-amber-400/30',
+      iconColor: 'text-amber-300',
+      accentColor: 'amber',
+      hoverColor: 'hover:from-amber-500/20 hover:to-yellow-500/20'
+    },
+    
+    // Seeds subcategories
+    'Vegetable Seeds': { 
+      icon: <Sprout className="w-4 h-4" />,
+      bgColor: 'from-emerald-500/10 to-green-500/10',
+      borderColor: 'border-emerald-400/30',
+      iconColor: 'text-emerald-300',
+      accentColor: 'emerald',
+      hoverColor: 'hover:from-emerald-500/20 hover:to-green-500/20'
+    },
+    'Flower Seeds': { 
+      icon: <Sparkles className="w-4 h-4" />,
+      bgColor: 'from-purple-500/10 to-pink-500/10',
+      borderColor: 'border-purple-400/30',
+      iconColor: 'text-purple-300',
+      accentColor: 'purple',
+      hoverColor: 'hover:from-purple-500/20 hover:to-pink-500/20'
+    },
+    
+    // Dried Legumes subcategories
+    'Lentils': { 
+      icon: <Wheat className="w-4 h-4" />,
+      bgColor: 'from-amber-500/10 to-orange-500/10',
+      borderColor: 'border-amber-400/30',
+      iconColor: 'text-amber-300',
+      accentColor: 'amber',
+      hoverColor: 'hover:from-amber-500/20 hover:to-orange-500/20'
+    },
+    'Beans': { 
+      icon: <Wheat className="w-4 h-4" />,
+      bgColor: 'from-brown-500/10 to-amber-500/10',
+      borderColor: 'border-brown-400/30',
+      iconColor: 'text-amber-300',
+      accentColor: 'amber',
+      hoverColor: 'hover:from-brown-500/20 hover:to-amber-500/20'
+    },
   };
 
-  // Default configuration for unknown categories
+  // Default configuration for unknown child categories
   const defaultConfig = {
-    icon: <Zap className="w-4 h-4" />,
+    icon: <Layers className="w-4 h-4" />,
     bgColor: 'from-green-500/10 to-emerald-500/10',
     borderColor: 'border-green-400/30',
     iconColor: 'text-green-300',
@@ -118,11 +154,12 @@ export default function FeaturedProductsWithSidebar({ addToCart, setQuickViewPro
     hoverColor: 'hover:from-green-500/20 hover:to-emerald-500/20'
   };
 
-  // Prepare categories for rendering, including an "All Categories" option
+  // Prepare child categories for rendering, including an "All Child Categories" option
   const categories = [
     { 
       _id: null, 
-      name: 'All Categories', 
+      name: 'All', 
+      parentCategory: 'All',
       icon: <Sparkles className="w-4 h-4" />,
       bgColor: 'from-green-500/10 via-emerald-500/10 to-lime-500/10',
       borderColor: 'border-green-400/30',
@@ -131,37 +168,30 @@ export default function FeaturedProductsWithSidebar({ addToCart, setQuickViewPro
       hoverColor: 'hover:from-green-500/20 hover:via-emerald-500/20 hover:to-lime-500/20',
       count: '∞' 
     },
-    ...categoriesData.map(cat => {
-      const config = categoryConfigs[cat.name] || defaultConfig;
+    ...childCategories.map(cat => {
+      const config = childCategoryConfigs[cat.name] || defaultConfig;
+      // Get parent category name
+      const parentCat = categoriesData.find(c => c._id === cat.parentCategory);
+      const parentName = parentCat?.name || 'Parent';
+      
       return {
         ...cat,
+        parentName: parentName,
         icon: config.icon,
         bgColor: config.bgColor,
         borderColor: config.borderColor,
         iconColor: config.iconColor,
         accentColor: config.accentColor,
         hoverColor: config.hoverColor,
-        count: Math.floor((cat.name.charCodeAt(0) * 13) % 50) + 10 // Deterministic mock count
+        count: Math.floor((cat.name.charCodeAt(0) * 13) % 40) + 5 // Deterministic mock count
       };
     }),
   ];
 
-  // Fetch products based on the selected category
-  const { data: productsData = null, isLoading: productsLoading } = useGetApprovedProductsQuery({
+  // Fetch products based on the selected child category
+  const { data: products = [], isLoading: productsLoading } = useGetApprovedProductsQuery({
     category: activeCategory ? activeCategory : undefined,
   });
-
-  const products = useMemo(() => {
-    let products = []
-    if (productsData) {
-      if (Array.isArray(productsData)) {
-        products = productsData
-      } else if (productsData.products && Array.isArray(productsData.products)) {
-        products = productsData.products
-      }
-    }
-    return products
-  }, [productsData])
 
   const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
 
@@ -205,23 +235,29 @@ export default function FeaturedProductsWithSidebar({ addToCart, setQuickViewPro
 
   // Helper function to get active state styles
   const getActiveStyles = (category) => {
-    if (!category.accentColor) return 'bg-gradient-to-r from-green-500 to-emerald-600 text-white border-transparent shadow-xl';
+    if (!category.accentColor) return 'bg-gradient-to-r from-green-500 to-emerald-600 text-white border-transparent shadow-lg';
     
     const accentMap = {
-      green: 'bg-gradient-to-r from-green-500 to-green-600 text-white border-transparent shadow-xl',
-      emerald: 'bg-gradient-to-r from-emerald-500 to-emerald-600 text-white border-transparent shadow-xl',
-      orange: 'bg-gradient-to-r from-orange-500 to-orange-600 text-white border-transparent shadow-xl',
-      amber: 'bg-gradient-to-r from-amber-500 to-amber-600 text-white border-transparent shadow-xl',
-      lime: 'bg-gradient-to-r from-lime-500 to-lime-600 text-white border-transparent shadow-xl',
-      pink: 'bg-gradient-to-r from-pink-500 to-pink-600 text-white border-transparent shadow-xl',
+      green: 'bg-gradient-to-r from-green-500 to-green-600 text-white border-transparent shadow-lg',
+      emerald: 'bg-gradient-to-r from-emerald-500 to-emerald-600 text-white border-transparent shadow-lg',
+      orange: 'bg-gradient-to-r from-orange-500 to-orange-600 text-white border-transparent shadow-lg',
+      amber: 'bg-gradient-to-r from-amber-500 to-amber-600 text-white border-transparent shadow-lg',
+      lime: 'bg-gradient-to-r from-lime-500 to-lime-600 text-white border-transparent shadow-lg',
+      pink: 'bg-gradient-to-r from-pink-500 to-pink-600 text-white border-transparent shadow-lg',
+      red: 'bg-gradient-to-r from-red-500 to-red-600 text-white border-transparent shadow-lg',
+      yellow: 'bg-gradient-to-r from-yellow-500 to-yellow-600 text-white border-transparent shadow-lg',
+      purple: 'bg-gradient-to-r from-purple-500 to-purple-600 text-white border-transparent shadow-lg',
     };
     
     return accentMap[category.accentColor] || accentMap.green;
   };
 
+  // Top 8 categories for mobile (shorter list for better mobile UX)
+  const mobileCategories = categories.slice(0, 8);
+
   return (
     <section
-      className="w-full bg-gradient-to-br from-green-800 via-emerald-800 to-green-900 py-6 sm:py-8 md:py-12 relative overflow-hidden"
+      className="w-full bg-gradient-to-br from-green-800 via-emerald-800 to-green-900 py-4 md:py-8 lg:py-12 relative overflow-hidden"
       aria-label="Featured products"
     >
       {/* Enhanced Background Elements */}
@@ -229,50 +265,171 @@ export default function FeaturedProductsWithSidebar({ addToCart, setQuickViewPro
         <motion.div
           initial={{ opacity: 0, scale: 0.8 }}
           animate={{ opacity: 1, scale: 1 }}
-          className="absolute -top-32 -right-32 w-64 h-64 bg-green-600/20 rounded-full blur-3xl"
+          className="absolute -top-20 -right-16 w-40 h-40 bg-green-600/20 rounded-full blur-2xl md:blur-3xl"
         />
         <motion.div
           initial={{ opacity: 0, scale: 0.8 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ delay: 0.15 }}
-          className="absolute -bottom-24 -left-24 w-56 h-56 bg-emerald-600/20 rounded-full blur-3xl"
+          className="absolute -bottom-16 -left-16 w-36 h-36 bg-emerald-600/20 rounded-full blur-2xl md:blur-3xl"
         />
-        {particles.map((p, i) => (
-          <motion.div
-            key={`p-${i}`}
-            initial={{ x: p.initialX, y: p.initialY, opacity: 0 }}
-            animate={{ x: p.initialX + p.animateXOffset, y: p.initialY - 15, opacity: [0, 0.6, 0] }}
-            transition={{ duration: p.duration, repeat: Infinity, delay: p.delay }}
-            className="absolute bg-green-300/30 rounded-full"
-            style={{ width: p.size, height: p.size }}
-          />
-        ))}
       </div>
 
-      <div className="mx-auto px-4 sm:px-6 lg:px-8 max-w-7xl relative">
-        {/* Categories Row - Now at the top for all screen sizes */}
+      <div className="mx-auto px-4 md:px-6 lg:px-8 max-w-7xl relative">
+        {/* Mobile Header with Filter and View Toggle */}
+        <div className="md:hidden mb-4">
+          <div className="flex items-center justify-between mb-3">
+            <motion.h2 
+              initial={{ x: -10, opacity: 0 }}
+              animate={{ x: 0, opacity: 1 }}
+              className="text-lg font-bold text-white flex items-center gap-2"
+            >
+              <div className="p-1.5 bg-gradient-to-r from-green-500 to-emerald-500 rounded-lg">
+                <Layers className="w-4 h-4 text-white" />
+              </div>
+              Specialized Products
+            </motion.h2>
+            
+            <div className="flex items-center gap-1">
+              {/* View Toggle */}
+              <div className="flex items-center bg-white/10 backdrop-blur-sm rounded-lg p-0.5">
+                <button
+                  onClick={() => setMobileViewMode('grid')}
+                  className={`p-1.5 rounded-md transition-all ${mobileViewMode === 'grid' ? 'bg-green-500 text-white' : 'text-green-100'}`}
+                  aria-label="Grid view"
+                >
+                  <Grid className="w-4 h-4" />
+                </button>
+                <button
+                  onClick={() => setMobileViewMode('list')}
+                  className={`p-1.5 rounded-md transition-all ${mobileViewMode === 'list' ? 'bg-green-500 text-white' : 'text-green-100'}`}
+                  aria-label="List view"
+                >
+                  <Filter className="w-4 h-4" />
+                </button>
+              </div>
+              
+              {/* Categories Toggle */}
+              <motion.button
+                whileTap={{ scale: 0.95 }}
+                onClick={() => setShowMobileCategories(!showMobileCategories)}
+                className="p-2 bg-white/10 backdrop-blur-sm border border-white/20 rounded-lg text-white ml-1"
+                aria-label="Filter categories"
+              >
+                <Menu className="w-4 h-4" />
+              </motion.button>
+            </div>
+          </div>
+
+          {/* Mobile Categories Grid - Always visible with 4 per row */}
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mb-3"
+          >
+            <div className="grid grid-cols-4 gap-2">
+              {mobileCategories.map((cat, index) => (
+                <motion.button
+                  key={cat._id ?? `cat-${index}`}
+                  initial={{ scale: 0.9, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  transition={{ delay: index * 0.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => setActiveCategory(cat._id)}
+                  className={`flex flex-col items-center justify-center p-2 rounded-xl border transition-all ${
+                    activeCategory === cat._id
+                      ? getActiveStyles(cat) + ' shadow-md'
+                      : `bg-gradient-to-r ${cat.bgColor} text-green-100 border ${cat.borderColor}`
+                  }`}
+                >
+                  <div className={`p-1.5 rounded-lg mb-1 ${activeCategory === cat._id ? 'bg-white/20 text-white' : `bg-white/10 ${cat.iconColor}`}`}>
+                    {cat.icon}
+                  </div>
+                  <span className="text-xs font-medium text-center truncate w-full">{cat.name}</span>
+                </motion.button>
+              ))}
+            </div>
+          </motion.div>
+
+          {/* View All Categories Button */}
+          <div className="flex justify-center mb-3">
+            <motion.button
+              whileTap={{ scale: 0.95 }}
+              onClick={() => setShowMobileCategories(!showMobileCategories)}
+              className="flex items-center gap-1.5 text-xs text-green-200 font-medium px-3 py-1.5 bg-white/5 rounded-full border border-white/10"
+            >
+              {showMobileCategories ? 'Show Less' : 'All Categories'}
+              <ChevronRight className={`w-3 h-3 transition-transform ${showMobileCategories ? 'rotate-90' : ''}`} />
+            </motion.button>
+          </div>
+
+          {/* Expanded Categories Grid */}
+          <AnimatePresence>
+            {showMobileCategories && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                exit={{ opacity: 0, height: 0 }}
+                className="overflow-hidden"
+              >
+                <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-3 mt-2">
+                  <div className="grid grid-cols-4 gap-2">
+                    {categories.map((cat) => (
+                      <motion.button
+                        key={cat._id ?? `cat-${cat.name}`}
+                        initial={{ scale: 0.9, opacity: 0 }}
+                        animate={{ scale: 1, opacity: 1 }}
+                        whileTap={{ scale: 0.95 }}
+                        onClick={() => {
+                          setActiveCategory(cat._id);
+                          setShowMobileCategories(false);
+                        }}
+                        className={`flex flex-col items-center justify-center p-2 rounded-lg text-xs font-medium transition-all ${
+                          activeCategory === cat._id
+                            ? getActiveStyles(cat) + ' shadow-md'
+                            : `bg-gradient-to-r ${cat.bgColor} text-green-100 border ${cat.borderColor}`
+                        }`}
+                      >
+                        <div className={`p-1 rounded-md mb-1 ${
+                          activeCategory === cat._id 
+                            ? 'bg-white/20 text-white' 
+                            : `bg-white/10 ${cat.iconColor}`
+                        }`}>
+                          {cat.icon}
+                        </div>
+                        <span className="text-center truncate w-full">{cat.name}</span>
+                      </motion.button>
+                    ))}
+                  </div>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+
+        {/* Desktop Child Categories Row */}
         <motion.div
           initial={{ y: -20, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           transition={{ duration: 0.6 }}
-          className="mb-8"
+          className="hidden md:block mb-6 lg:mb-8"
         >
           <div className="flex items-center justify-between mb-4">
             <motion.h2 
               initial={{ x: -10, opacity: 0 }}
               animate={{ x: 0, opacity: 1 }}
               transition={{ delay: 0.2 }}
-              className="text-xl sm:text-2xl font-bold text-white flex items-center gap-3"
+              className="text-xl lg:text-2xl font-bold text-white flex items-center gap-3"
             >
               <div className="p-2 bg-gradient-to-r from-green-500 to-emerald-500 rounded-xl shadow-lg">
-                <Sparkles className="w-5 h-5 text-white" />
+                <Layers className="w-5 h-5 text-white" />
               </div>
-              Browse Categories
+              Browse Specialized Categories
             </motion.h2>
             
             <div className="flex items-center gap-2">
-              <div className="hidden sm:flex items-center text-sm bg-gradient-to-r from-amber-500 to-yellow-500 text-white px-3 py-1.5 rounded-full shadow-lg">
-                {categories.length} Categories
+              <div className="hidden lg:flex items-center text-sm bg-gradient-to-r from-amber-500 to-yellow-500 text-white px-3 py-1.5 rounded-full shadow-lg">
+                {categories.length} Specialized
               </div>
               <div className="flex items-center gap-1">
                 <motion.button 
@@ -297,12 +454,12 @@ export default function FeaturedProductsWithSidebar({ addToCart, setQuickViewPro
             </div>
           </div>
 
-          {/* Categories Scroll Container */}
+          {/* Child Categories Scroll Container */}
           <div
             ref={scrollContainerRef}
             className="flex gap-3 overflow-x-auto no-scrollbar pb-4 -ml-1 pl-1"
             role="tablist"
-            aria-label="Product categories"
+            aria-label="Specialized product categories"
           >
             {categoriesLoading ? (
               <div className="flex gap-3">
@@ -322,7 +479,7 @@ export default function FeaturedProductsWithSidebar({ addToCart, setQuickViewPro
                   onClick={() => setActiveCategory(cat._id)}
                   role="tab"
                   aria-selected={activeCategory === cat._id}
-                  className={`flex-shrink-0 w-32 sm:w-36 flex flex-col items-center justify-center gap-2 p-4 rounded-2xl font-semibold transition-all duration-300 border-2 focus:outline-none focus:ring-2 focus:ring-green-400 ${
+                  className={`flex-shrink-0 w-36 lg:w-40 flex flex-col items-center justify-center gap-2 p-4 rounded-2xl font-semibold transition-all duration-300 border-2 focus:outline-none focus:ring-2 focus:ring-green-400 ${
                     activeCategory === cat._id
                       ? getActiveStyles(cat) + ' shadow-xl'
                       : `bg-gradient-to-r ${cat.bgColor} text-green-100 border ${cat.borderColor} ${cat.hoverColor} hover:shadow-lg`
@@ -335,7 +492,14 @@ export default function FeaturedProductsWithSidebar({ addToCart, setQuickViewPro
                   }`}>
                     {cat.icon}
                   </div>
-                  <span className="text-sm font-semibold text-center leading-tight">{cat.name}</span>
+                  <div className="flex flex-col items-center">
+                    <span className="text-sm font-semibold text-center leading-tight">{cat.name}</span>
+                    {cat.parentName && cat.parentName !== 'All' && (
+                      <span className="text-xs text-green-200/70 mt-1 px-2 py-0.5 bg-black/20 rounded-full">
+                        {cat.parentName}
+                      </span>
+                    )}
+                  </div>
                   <span className={`text-xs ${
                     activeCategory === cat._id ? 'text-white/80' : 'text-green-200/70'
                   }`}>
@@ -354,38 +518,38 @@ export default function FeaturedProductsWithSidebar({ addToCart, setQuickViewPro
           transition={{ duration: 0.6, delay: 0.2 }}
         >
           {/* Header Section */}
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-8 gap-4">
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6 lg:mb-8 gap-4">
             <div className="flex-1">
               <motion.div 
                 initial={{ y: -8, opacity: 0 }} 
                 animate={{ y: 0, opacity: 1 }} 
                 transition={{ delay: 0.3 }}
-                className="inline-flex items-center gap-2 bg-gradient-to-r from-amber-500 to-yellow-500 text-white px-4 py-2 rounded-full mb-3 shadow-lg"
+                className="inline-flex items-center gap-2 bg-gradient-to-r from-amber-500 to-yellow-500 text-white px-3 md:px-4 py-1.5 md:py-2 rounded-full mb-3 shadow-lg"
               >
-                <Flame className="w-4 h-4" />
-                <span className="text-sm font-bold">FRESH COLLECTION</span>
+                <Flame className="w-3 md:w-4 h-3 md:h-4" />
+                <span className="text-xs md:text-sm font-bold">SPECIALIZED COLLECTION</span>
               </motion.div>
 
               <motion.h2 
                 initial={{ y: 8, opacity: 0 }} 
                 animate={{ y: 0, opacity: 1 }} 
                 transition={{ delay: 0.4 }} 
-                className="text-2xl sm:text-3xl md:text-4xl font-bold text-white mb-2"
+                className="text-xl md:text-2xl lg:text-3xl xl:text-4xl font-bold text-white mb-2"
               >
-                Farm Fresh <span className="text-yellow-300 ">Delights</span>
+                Premium <span className="text-yellow-300">Specialized</span> Products
               </motion.h2>
 
               <motion.p 
                 initial={{ y: 8, opacity: 0 }} 
                 animate={{ y: 0, opacity: 1 }} 
                 transition={{ delay: 0.5 }} 
-                className="text-sm sm:text-base text-green-100 max-w-2xl"
+                className="text-sm md:text-base text-green-100 max-w-2xl"
               >
-                Discover handpicked fresh produce with <span className="font-semibold text-yellow-300">farm-to-table quality</span> and guaranteed freshness
+                Discover specialized products from our curated categories with <span className="font-semibold text-yellow-300">expert-selected quality</span> and premium freshness
               </motion.p>
             </div>
 
-            <div className="mt-2 sm:mt-0">
+            <div className="mt-2 md:mt-0">
               <motion.div 
                 initial={{ scale: 0.95, opacity: 0 }} 
                 animate={{ scale: 1, opacity: 1 }} 
@@ -393,85 +557,170 @@ export default function FeaturedProductsWithSidebar({ addToCart, setQuickViewPro
               >
                 <Link 
                   href="/products" 
-                  className="group inline-flex items-center gap-2 bg-white/10 backdrop-blur-sm border border-white/20 text-white px-4 py-3 rounded-xl shadow-lg hover:bg-white/20 hover:shadow-xl text-sm font-bold transition-all duration-300"
+                  className="group inline-flex items-center gap-2 bg-white/10 backdrop-blur-sm border border-white/20 text-white px-3 md:px-4 py-2.5 md:py-3 rounded-xl shadow-lg hover:bg-white/20 hover:shadow-xl text-sm font-bold transition-all duration-300"
                 >
-                  <TrendingUp className="w-4 h-4" />
-                  Explore All
-                  <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                  <TrendingUp className="w-3 md:w-4 h-3 md:h-4" />
+                  <span>Explore All</span>
+                  <ArrowRight className="w-3 md:w-4 h-3 md:h-4 group-hover:translate-x-1 transition-transform" />
                 </Link>
               </motion.div>
             </div>
           </div>
 
-          {/* Trust Badges */}
-          {/* <motion.div 
-            initial={{ y: 12, opacity: 0 }} 
-            animate={{ y: 0, opacity: 1 }} 
-            transition={{ delay: 0.7 }}
-            className="flex flex-wrap gap-3 mb-8 justify-center sm:justify-start"
-          >
-            {[
-              { icon: Shield, label: "100% Secure", color: "green" },
-              { icon: Truck, label: "Fast Delivery", color: "emerald" },
-              { icon: Clock, label: "24/7 Support", color: "amber" },
-              { icon: Crown, label: "Premium Quality", color: "yellow" }
-            ].map((badge, i) => (
-              <motion.div
-                key={badge.label}
-                initial={{ scale: 0 }}
-                animate={{ scale: 1 }}
-                transition={{ delay: 0.7 + i * 0.1 }}
-                whileHover={{ scale: 1.05 }}
-                className="flex items-center gap-2 bg-white/10 backdrop-blur-sm px-3 py-2 rounded-xl border border-white/20 hover:bg-white/15 transition-all duration-200"
-              >
-                <badge.icon className={`w-4 h-4 text-${badge.color}-400`} />
-                <div className="text-xs text-green-100 font-medium">{badge.label}</div>
-              </motion.div>
-            ))}
-          </motion.div> */}
-
-          {/* Products Grid */}
+          {/* Products Grid/List */}
           {productsLoading ? (
-            <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-16 sm:gap-6">
+            <div className={mobileViewMode === 'grid' 
+              ? "grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-4 lg:gap-6"
+              : "space-y-3 md:space-y-4"
+            }>
               {[...Array(8)].map((_, i) => (
-                <motion.div 
-                  key={i} 
-                  initial={{ opacity: 0, y: 8 }} 
-                  animate={{ opacity: 1, y: 0 }} 
-                  transition={{ delay: i * 0.03 }}
-                  className="bg-white/10 backdrop-blur-sm rounded-2xl border border-white/20 shadow-lg overflow-hidden animate-pulse"
-                >
-                  <div className="h-32 sm:h-36 bg-green-600/30" />
-                  <div className="p-4 space-y-2">
-                    <div className="h-3 bg-green-600/30 rounded w-3/4" />
-                    <div className="h-3 bg-green-600/30 rounded w-1/2" />
-                    <div className="h-8 bg-green-600/30 rounded-xl w-full" />
-                  </div>
-                </motion.div>
+                mobileViewMode === 'grid' ? (
+                  <motion.div 
+                    key={i} 
+                    initial={{ opacity: 0, y: 8 }} 
+                    animate={{ opacity: 1, y: 0 }} 
+                    transition={{ delay: i * 0.03 }}
+                    className="bg-white/10 backdrop-blur-sm rounded-xl md:rounded-2xl border border-white/20 shadow-lg overflow-hidden animate-pulse"
+                  >
+                    <div className="h-32 md:h-36 lg:h-40 bg-green-600/30" />
+                    <div className="p-3 md:p-4 space-y-2">
+                      <div className="h-3 bg-green-600/30 rounded w-3/4" />
+                      <div className="h-3 bg-green-600/30 rounded w-1/2" />
+                      <div className="h-8 bg-green-600/30 rounded-lg md:rounded-xl w-full" />
+                    </div>
+                  </motion.div>
+                ) : (
+                  <motion.div 
+                    key={i} 
+                    initial={{ opacity: 0, x: -10 }} 
+                    animate={{ opacity: 1, x: 0 }} 
+                    transition={{ delay: i * 0.03 }}
+                    className="bg-white/10 backdrop-blur-sm rounded-xl border border-white/20 shadow-lg p-3 animate-pulse flex items-center gap-3"
+                  >
+                    <div className="w-20 h-20 bg-green-600/30 rounded-lg" />
+                    <div className="flex-1 space-y-2">
+                      <div className="h-3 bg-green-600/30 rounded w-3/4" />
+                      <div className="h-3 bg-green-600/30 rounded w-1/2" />
+                      <div className="h-6 bg-green-600/30 rounded-lg w-full" />
+                    </div>
+                  </motion.div>
+                )
               ))}
             </div>
           ) : products.length === 0 ? (
             <motion.div 
               initial={{ opacity: 0, scale: 0.98 }} 
               animate={{ opacity: 1, scale: 1 }} 
-              className="bg-white/10 backdrop-blur-sm rounded-2xl p-8 text-center border border-white/20 shadow-xl"
+              className="bg-white/10 backdrop-blur-sm rounded-xl md:rounded-2xl p-6 md:p-8 text-center border border-white/20 shadow-xl"
             >
-              <div className="w-16 h-16 mx-auto mb-4 bg-white/20 rounded-2xl flex items-center justify-center">
-                <Sparkles className="h-8 w-8 text-white" />
+              <div className="w-12 h-12 md:w-16 md:h-16 mx-auto mb-3 md:mb-4 bg-white/20 rounded-xl flex items-center justify-center">
+                <Sparkles className="h-6 w-6 md:h-8 md:w-8 text-white" />
               </div>
-              <h3 className="text-xl font-bold text-white mb-2">No Products Found</h3>
-              <p className="text-green-100 mb-4">We're preparing amazing fresh produce for this category. Check back soon or explore other categories!</p>
+              <h3 className="text-lg md:text-xl font-bold text-white mb-2">No Products Found</h3>
+              <p className="text-sm md:text-base text-green-100 mb-4">We're preparing amazing specialized products for this category. Check back soon or explore other specialized categories!</p>
               <motion.button 
                 whileHover={{ scale: 1.05 }} 
                 whileTap={{ scale: 0.95 }} 
                 onClick={() => setActiveCategory(null)} 
-                className="bg-gradient-to-r from-amber-500 to-yellow-500 text-white px-6 py-3 rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all duration-200"
+                className="bg-gradient-to-r from-amber-500 to-yellow-500 text-white px-5 md:px-6 py-2.5 md:py-3 rounded-lg md:rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all duration-200 text-sm md:text-base"
               >
                 Show All Products
               </motion.button>
             </motion.div>
+          ) : mobileViewMode === 'list' ? (
+            // Mobile List View
+            <div className="space-y-3 md:hidden">
+              {products.map((product, index) => (
+                <motion.div
+                  key={product._id}
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: index * 0.03 }}
+                  className="bg-white/10 backdrop-blur-sm rounded-xl border border-white/20 shadow-lg overflow-hidden"
+                >
+                  <div className="flex items-stretch">
+                    {/* Product Image */}
+                    <Link href={`/product/${product.slug}`} className="flex-shrink-0 w-28 h-28 relative">
+                      <Image
+                        src={buildImageUrl(product.image)}
+                        alt={product.name}
+                        fill
+                        className="object-cover"
+                        onError={(e) => {
+                          e.currentTarget.src = "/placeholder-product.png";
+                        }}
+                      />
+                      {/* Stock Badge */}
+                      <div className="absolute top-2 left-2">
+                        {product.inStock ? (
+                          <div className="flex items-center gap-1 bg-green-500 text-white px-1.5 py-0.5 rounded-full text-xs font-bold shadow-md">
+                            <div className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" />
+                            <span>In Stock</span>
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-1 bg-red-500 text-white px-1.5 py-0.5 rounded-full text-xs font-bold shadow-md">
+                            <div className="w-1.5 h-1.5 bg-white rounded-full" />
+                            <span>Out of Stock</span>
+                          </div>
+                        )}
+                      </div>
+                    </Link>
+
+                    {/* Product Info */}
+                    <div className="flex-1 p-3 flex flex-col justify-between">
+                      <div>
+                        <Link href={`/product/${product.slug}`}>
+                          <h3 className="text-sm font-semibold text-white line-clamp-2 mb-1">{product.name}</h3>
+                        </Link>
+                        
+                        {/* Rating */}
+                        <div className="flex items-center gap-1 mb-2">
+                          <div className="flex items-center gap-0.5">
+                            {[...Array(5)].map((_, i) => (
+                              <Star 
+                                key={i} 
+                                className={`w-2.5 h-2.5 ${i < (product.rating || 4) ? 'fill-yellow-400 text-yellow-400' : 'fill-white/30 text-white/30'}`} 
+                              />
+                            ))}
+                          </div>
+                          <span className="text-xs text-green-100">({product.reviewCount || 24})</span>
+                        </div>
+
+                        {/* Price */}
+                        <div className="mb-2">
+                          <p className="text-lg font-bold text-yellow-300">
+                            {product.price} PKR
+                          </p>
+                          {product.originalPrice && product.originalPrice > product.price && (
+                            <p className="text-xs line-through text-green-200">{product.originalPrice} PKR</p>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Add to Cart Button */}
+                      <motion.button 
+                        whileTap={{ scale: 0.97 }} 
+                        onClick={() => addToCart(product)} 
+                        disabled={!product.inStock}
+                        className={`w-full py-2 px-3 rounded-lg font-semibold shadow-md transition-all duration-200 text-sm ${
+                          product.inStock
+                            ? 'bg-gradient-to-r from-amber-500 to-yellow-500 text-white'
+                            : 'bg-white/20 text-white/70 cursor-not-allowed'
+                        }`}
+                      >
+                        <div className="flex items-center justify-center gap-1.5">
+                          <ShoppingCart className="w-3.5 h-3.5" />
+                          {product.inStock ? 'Add to Cart' : 'Out of Stock'}
+                        </div>
+                      </motion.button>
+                    </div>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
           ) : (
-            <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
+            // Grid View (Desktop & Mobile Grid)
+            <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-4 lg:gap-6">
               <AnimatePresence>
                 {products.map((product, index) => (
                   <motion.div
@@ -480,49 +729,37 @@ export default function FeaturedProductsWithSidebar({ addToCart, setQuickViewPro
                     animate={{ opacity: 1, y: 0, scale: 1 }}
                     exit={{ opacity: 0, scale: 0.98 }}
                     transition={{ delay: index * 0.02, type: 'spring', stiffness: 120, damping: 16 }}
-                    whileHover={{ y: -6, scale: 1.02 }}
+                    whileHover={{ y: -4, scale: 1.02 }}
                     onHoverStart={() => setHoveredProduct(product._id)}
                     onHoverEnd={() => setHoveredProduct(null)}
                     className="relative group"
                   >
-                    <div className="bg-white/10 backdrop-blur-sm rounded-2xl border border-white/20 shadow-lg hover:shadow-2xl transition-all duration-300 overflow-hidden h-full flex flex-col relative">
+                    <div className="bg-white/10 backdrop-blur-sm rounded-xl md:rounded-2xl border border-white/20 shadow-lg hover:shadow-xl md:hover:shadow-2xl transition-all duration-300 overflow-hidden h-full flex flex-col relative">
                       
-                      {/* Enhanced Background Glow */}
-                      <AnimatePresence>
-                        {hoveredProduct === product._id && (
-                          <motion.div
-                            initial={{ opacity: 0, scale: 0.8 }}
-                            animate={{ opacity: 1, scale: 1 }}
-                            exit={{ opacity: 0, scale: 0.8 }}
-                            className="absolute inset-0 bg-gradient-to-r from-green-500/10 to-emerald-500/10 rounded-2xl -z-10"
-                          />
-                        )}
-                      </AnimatePresence>
-
                       {/* Stock Status */}
-                      <div className="absolute top-3 left-3 z-20">
+                      <div className="absolute top-2 md:top-3 left-2 md:left-3 z-20">
                         {product.inStock ? (
-                          <div className="flex items-center gap-1 bg-green-500 text-white px-2 py-1 rounded-full text-xs font-bold shadow-lg">
+                          <div className="flex items-center gap-1 bg-green-500 text-white px-1.5 md:px-2 py-0.5 md:py-1 rounded-full text-xs font-bold shadow-lg">
                             <div className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" />
                             <span className="text-xs">In Stock</span>
                           </div>
                         ) : (
-                          <div className="flex items-center gap-1 bg-red-500 text-white px-2 py-1 rounded-full text-xs font-bold shadow-lg">
+                          <div className="flex items-center gap-1 bg-red-500 text-white px-1.5 md:px-2 py-0.5 md:py-1 rounded-full text-xs font-bold shadow-lg">
                             <div className="w-1.5 h-1.5 bg-white rounded-full" />
                             <span className="text-xs">Out of Stock</span>
                           </div>
                         )}
                       </div>
 
-                      {/* Enhanced Badges */}
-                      <div className="absolute top-3 right-3 z-20 flex flex-col gap-2">
+                      {/* Badges */}
+                      <div className="absolute top-2 md:top-3 right-2 md:right-3 z-20 flex flex-col gap-1 md:gap-2">
                         {product.coupons?.length > 0 && (
                           <motion.div 
                             initial={{ scale: 0, rotate: -180 }}
                             animate={{ scale: 1, rotate: 0 }}
-                            className="flex items-center gap-1 bg-gradient-to-r from-amber-500 to-yellow-500 text-white px-2 py-1 rounded-full text-xs font-bold shadow-lg"
+                            className="flex items-center gap-1 bg-gradient-to-r from-amber-500 to-yellow-500 text-white px-1.5 md:px-2 py-0.5 md:py-1 rounded-full text-xs font-bold shadow-lg"
                           >
-                            <Zap className="w-3 h-3" />
+                            <Zap className="w-2.5 md:w-3 h-2.5 md:h-3" />
                             <span className="text-xs">{product.coupons[0]?.discount || '10%'} OFF</span>
                           </motion.div>
                         )}
@@ -531,76 +768,49 @@ export default function FeaturedProductsWithSidebar({ addToCart, setQuickViewPro
                             initial={{ scale: 0, rotate: 180 }}
                             animate={{ scale: 1, rotate: 0 }}
                             transition={{ delay: 0.1 }}
-                            className="flex items-center gap-1 bg-gradient-to-r from-green-500 to-emerald-500 text-white px-2 py-1 rounded-full text-xs font-bold shadow-lg"
+                            className="flex items-center gap-1 bg-gradient-to-r from-green-500 to-emerald-500 text-white px-1.5 md:px-2 py-0.5 md:py-1 rounded-full text-xs font-bold shadow-lg"
                           >
-                            <Flame className="w-3 h-3" />
+                            <Flame className="w-2.5 md:w-3 h-2.5 md:h-3" />
                             <span className="text-xs">HOT DEAL</span>
                           </motion.div>
                         )}
                       </div>
 
-                      {/* Enhanced Quick Actions */}
-                      <div className="absolute top-12 right-3 z-20 flex flex-col gap-2 opacity-0 group-hover:opacity-100 transition-all duration-300 transform group-hover:translate-x-0 translate-x-4">
-                        <motion.button 
-                          whileHover={{ scale: 1.1 }}
-                          whileTap={{ scale: 0.9 }}
-                          aria-label="Wishlist" 
-                          className="p-2 bg-white/20 backdrop-blur-sm rounded-xl shadow-lg hover:bg-white/30 transition-all duration-200"
-                        >
-                          <Heart className="w-4 h-4 text-white" />
-                        </motion.button>
-                        <motion.button 
-                          whileHover={{ scale: 1.1 }}
-                          whileTap={{ scale: 0.9 }}
-                          aria-label="Quick view" 
-                          onClick={() => setQuickViewProduct(product)} 
-                          className="p-2 bg-white/20 backdrop-blur-sm rounded-xl shadow-lg hover:bg-white/30 transition-all duration-200"
-                        >
-                          <Eye className="w-4 h-4 text-white" />
-                        </motion.button>
-                      </div>
-
-                      {/* Enhanced Product Image */}
+                      {/* Product Image */}
                       <Link href={`/product/${product.slug}`} className="block flex-shrink-0">
-                        <div className="relative h-32 sm:h-36 md:h-40 w-full overflow-hidden bg-white/10">
-                          <motion.div 
-                            whileHover={{ scale: 1.08 }} 
-                            transition={{ type: 'spring', stiffness: 300, damping: 20 }}
-                            className="h-full w-full"
-                          >
-                            <Image
-                              src={buildImageUrl(product.image)}
-                              alt={product.name}
-                              fill
-                              className="object-cover w-full h-full transition-transform duration-500"
-                              sizes="(max-width:640px) 50vw, (max-width:1024px) 33vw, 25vw"
-                              onError={(e) => {
-                                e.currentTarget.src = "/placeholder-product.png";
-                              }}
-                            />
-                          </motion.div>
+                        <div className="relative h-32 md:h-36 lg:h-40 w-full overflow-hidden bg-white/10">
+                          <Image
+                            src={buildImageUrl(product.image)}
+                            alt={product.name}
+                            fill
+                            className="object-cover w-full h-full transition-transform duration-500 group-hover:scale-105"
+                            sizes="(max-width:640px) 50vw, (max-width:1024px) 33vw, 25vw"
+                            onError={(e) => {
+                              e.currentTarget.src = "/placeholder-product.png";
+                            }}
+                          />
                           <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                         </div>
                       </Link>
 
-                      {/* Enhanced Product Info */}
-                      <div className="p-4 sm:p-5 flex-1 flex flex-col">
+                      {/* Product Info */}
+                      <div className="p-3 md:p-4 flex-1 flex flex-col">
                         <div className="flex-1">
                           <Link href={`/product/${product.slug}`}>
-                            <h3 className="text-sm sm:text-base font-semibold text-white leading-tight line-clamp-2 mb-2 hover:text-yellow-300 transition-colors duration-200 group-hover:underline">
+                            <h3 className="text-sm md:text-base font-semibold text-white leading-tight line-clamp-2 mb-1 md:mb-2 hover:text-yellow-300 transition-colors duration-200">
                               {product.name}
                             </h3>
                           </Link>
-                          <p className="text-xs text-green-100 mb-3 line-clamp-1">by {product.seller?.user?.name || 'Premium Seller'}</p>
+                          <p className="text-xs text-green-100 mb-2 md:mb-3 line-clamp-1">by {product.seller?.user?.name || 'Premium Seller'}</p>
 
-                          {/* Enhanced Rating */}
-                          <div className="flex items-center justify-between mb-3">
-                            <div className="flex items-center gap-2">
+                          {/* Rating */}
+                          <div className="flex items-center justify-between mb-2 md:mb-3">
+                            <div className="flex items-center gap-1 md:gap-2">
                               <div className="flex items-center gap-0.5">
                                 {[...Array(5)].map((_, i) => (
                                   <Star 
                                     key={i} 
-                                    className={`w-3 h-3 ${i < (product.rating || 4) ? 'fill-yellow-400 text-yellow-400' : 'fill-white/30 text-white/30'}`} 
+                                    className={`w-2.5 md:w-3 h-2.5 md:h-3 ${i < (product.rating || 4) ? 'fill-yellow-400 text-yellow-400' : 'fill-white/30 text-white/30'}`} 
                                   />
                                 ))}
                               </div>
@@ -608,20 +818,20 @@ export default function FeaturedProductsWithSidebar({ addToCart, setQuickViewPro
                             </div>
                           </div>
 
-                          {/* Enhanced Price */}
-                          <div className="flex items-center justify-between mb-4">
+                          {/* Price */}
+                          <div className="flex items-center justify-between mb-3 md:mb-4">
                             <div>
-                              <p className="text-lg font-bold text-yellow-300">
+                              <p className="text-base md:text-lg font-bold text-yellow-300">
                                 {product.price} PKR
                               </p>
                               {product.originalPrice && product.originalPrice > product.price && (
-                                <p className="text-sm line-through text-green-200">{product.originalPrice} PKR</p>
+                                <p className="text-xs md:text-sm line-through text-green-200">{product.originalPrice} PKR</p>
                               )}
                             </div>
                             {product.originalPrice && product.originalPrice > product.price && (
-                              <div className="text-right">
+                              <div className="text-right hidden md:block">
                                 <p className="text-xs text-green-100">You save</p>
-                                <p className="text-sm font-bold text-amber-300">
+                                <p className="text-xs md:text-sm font-bold text-amber-300">
                                   {product.originalPrice - product.price} PKR
                                 </p>
                               </div>
@@ -629,21 +839,21 @@ export default function FeaturedProductsWithSidebar({ addToCart, setQuickViewPro
                           </div>
                         </div>
 
-                        {/* Enhanced Add to Cart Button */}
-                        <div className="mt-auto pt-3">
+                        {/* Add to Cart Button */}
+                        <div className="mt-auto pt-2 md:pt-3">
                           <motion.button 
                             whileHover={{ scale: 1.03 }} 
                             whileTap={{ scale: 0.97 }} 
                             onClick={() => addToCart(product)} 
                             disabled={!product.inStock}
-                            className={`w-full py-3 px-4 rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all duration-200 relative overflow-hidden ${
+                            className={`w-full py-2.5 md:py-3 px-3 md:px-4 rounded-lg md:rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all duration-200 relative overflow-hidden text-sm md:text-base ${
                               product.inStock
                                 ? 'bg-gradient-to-r from-amber-500 to-yellow-500 text-white hover:from-amber-600 hover:to-yellow-600'
                                 : 'bg-white/20 text-white/70 cursor-not-allowed'
                             }`}
                           >
                             <div className="flex items-center justify-center gap-2">
-                              <ShoppingCart className="w-4 h-4" />
+                              <ShoppingCart className="w-3.5 md:w-4 h-3.5 md:h-4" />
                               {product.inStock ? 'Add to Cart' : 'Out of Stock'}
                             </div>
                             {product.inStock && (
@@ -658,27 +868,6 @@ export default function FeaturedProductsWithSidebar({ addToCart, setQuickViewPro
                         </div>
                       </div>
                     </div>
-
-                    {/* Enhanced Hover Effects */}
-                    <AnimatePresence>
-                      {hoveredProduct === product._id && (
-                        <>
-                          <motion.div 
-                            initial={{ scale: 0, opacity: 0 }}
-                            animate={{ scale: 1, opacity: 1 }}
-                            exit={{ scale: 0, opacity: 0 }}
-                            className="absolute -top-2 -right-2 w-6 h-6 bg-yellow-400/50 rounded-full blur-sm"
-                          />
-                          <motion.div 
-                            initial={{ scale: 0, opacity: 0 }}
-                            animate={{ scale: 1, opacity: 1 }}
-                            exit={{ scale: 0, opacity: 0 }}
-                            transition={{ delay: 0.05 }}
-                            className="absolute -bottom-2 -left-2 w-4 h-4 bg-amber-400/50 rounded-full blur-sm"
-                          />
-                        </>
-                      )}
-                    </AnimatePresence>
                   </motion.div>
                 ))}
               </AnimatePresence>
