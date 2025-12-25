@@ -4,8 +4,8 @@ import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { 
-  Layers, Sparkles, ArrowRight, ShoppingCart, Star,
-  ChevronLeft, ChevronRight, TrendingUp, Menu, Grid, Filter
+  Carrot, Apple, Sprout, Wheat, Zap, Sparkles, Flame, Crown, Star, ArrowRight, ShoppingCart, Heart, Eye,
+  ChevronLeft, ChevronRight, TrendingUp, Shield, Truck, Clock, Leaf, Layers, Menu, Grid, Filter
 } from 'lucide-react';
 import { useGetApprovedProductsQuery } from '@/store/features/productApi';
 import { useGetAllCategoriesQuery } from '@/store/features/categoryApi';
@@ -17,6 +17,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 
 export default function FeaturedProductsWithSidebar({ addToCart, setQuickViewProduct }) {
   const [activeCategory, setActiveCategory] = useState(null);
+  const [hoveredProduct, setHoveredProduct] = useState(null);
+  const [currentSlide, setCurrentSlide] = useState(0);
   const [showMobileCategories, setShowMobileCategories] = useState(false);
   const [mobileViewMode, setMobileViewMode] = useState('grid'); // 'grid' or 'list'
   const scrollContainerRef = useRef(null);
@@ -26,41 +28,155 @@ export default function FeaturedProductsWithSidebar({ addToCart, setQuickViewPro
   // Fetch categories from the categoryApi
   const { data: rawCategoriesData = [], isLoading: categoriesLoading } = useGetAllCategoriesQuery();
   
-  // Safely normalize to array
+  // Safely normalize categories to an array
   const categoriesData = Array.isArray(rawCategoriesData) 
     ? rawCategoriesData 
-    : rawCategoriesData?.categories || rawCategoriesData?.data || [];
+    : rawCategoriesData?.data || rawCategoriesData?.categories || rawCategoriesData?.products || [];
 
   // Filter only child categories (categories that have a parentCategory)
-  const childCategories = categoriesData.filter(cat => cat.parentCategory);
+  const childCategories = categoriesData.filter(cat => cat && cat.parentCategory);
 
-  // Default configuration for all child categories (general/neutral styling)
-  const defaultConfig = {
-    icon: <Layers className="w-4 h-4" />,
-    bgColor: 'from-blue-500/10 to-indigo-500/10',
-    borderColor: 'border-blue-400/30',
-    iconColor: 'text-blue-300',
-    accentColor: 'blue',
-    hoverColor: 'hover:from-blue-500/20 hover:to-indigo-500/20'
+  // Auto-rotate featured products (kept as-is, even though not used in JSX)
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentSlide((prev) => (prev + 1) % 3);
+    }, 5000);
+    return () => clearInterval(interval);
+  }, []);
+
+  // Child category configurations
+  const childCategoryConfigs = {
+    // Vegetables subcategories
+    'Leafy Greens': { 
+      icon: <Leaf className="w-4 h-4" />,
+      bgColor: 'from-green-500/10 to-emerald-500/10',
+      borderColor: 'border-green-400/30',
+      iconColor: 'text-green-300',
+      accentColor: 'green',
+      hoverColor: 'hover:from-green-500/20 hover:to-emerald-500/20'
+    },
+    'Root Vegetables': { 
+      icon: <Carrot className="w-4 h-4" />,
+      bgColor: 'from-orange-500/10 to-amber-500/10',
+      borderColor: 'border-orange-400/30',
+      iconColor: 'text-orange-300',
+      accentColor: 'orange',
+      hoverColor: 'hover:from-orange-500/20 hover:to-amber-500/20'
+    },
+    'Tomatoes': { 
+      icon: <Apple className="w-4 h-4" />,
+      bgColor: 'from-red-500/10 to-rose-500/10',
+      borderColor: 'border-red-400/30',
+      iconColor: 'text-red-300',
+      accentColor: 'red',
+      hoverColor: 'hover:from-red-500/20 hover:to-rose-500/20'
+    },
+    'Peppers': { 
+      icon: <Flame className="w-4 h-4" />,
+      bgColor: 'from-orange-500/10 to-red-500/10',
+      borderColor: 'border-orange-400/30',
+      iconColor: 'text-orange-300',
+      accentColor: 'orange',
+      hoverColor: 'hover:from-orange-500/20 hover:to-red-500/20'
+    },
+    'Cucumbers': { 
+      icon: <Sprout className="w-4 h-4" />,
+      bgColor: 'from-lime-500/10 to-green-500/10',
+      borderColor: 'border-lime-400/30',
+      iconColor: 'text-lime-300',
+      accentColor: 'lime',
+      hoverColor: 'hover:from-lime-500/20 hover:to-green-500/20'
+    },
+    
+    // Fruits subcategories
+    'Citrus Fruits': { 
+      icon: <Apple className="w-4 h-4" />,
+      bgColor: 'from-yellow-500/10 to-orange-500/10',
+      borderColor: 'border-yellow-400/30',
+      iconColor: 'text-yellow-300',
+      accentColor: 'yellow',
+      hoverColor: 'hover:from-yellow-500/20 hover:to-orange-500/20'
+    },
+    'Berries': { 
+      icon: <Apple className="w-4 h-4" />,
+      bgColor: 'from-pink-500/10 to-purple-500/10',
+      borderColor: 'border-pink-400/30',
+      iconColor: 'text-pink-300',
+      accentColor: 'pink',
+      hoverColor: 'hover:from-pink-500/20 hover:to-purple-500/20'
+    },
+    'Tropical Fruits': { 
+      icon: <Sparkles className="w-4 h-4" />,
+      bgColor: 'from-amber-500/10 to-yellow-500/10',
+      borderColor: 'border-amber-400/30',
+      iconColor: 'text-amber-300',
+      accentColor: 'amber',
+      hoverColor: 'hover:from-amber-500/20 hover:to-yellow-500/20'
+    },
+    
+    // Seeds subcategories
+    'Vegetable Seeds': { 
+      icon: <Sprout className="w-4 h-4" />,
+      bgColor: 'from-emerald-500/10 to-green-500/10',
+      borderColor: 'border-emerald-400/30',
+      iconColor: 'text-emerald-300',
+      accentColor: 'emerald',
+      hoverColor: 'hover:from-emerald-500/20 hover:to-green-500/20'
+    },
+    'Flower Seeds': { 
+      icon: <Sparkles className="w-4 h-4" />,
+      bgColor: 'from-purple-500/10 to-pink-500/10',
+      borderColor: 'border-purple-400/30',
+      iconColor: 'text-purple-300',
+      accentColor: 'purple',
+      hoverColor: 'hover:from-purple-500/20 hover:to-pink-500/20'
+    },
+    
+    // Dried Legumes subcategories
+    'Lentils': { 
+      icon: <Wheat className="w-4 h-4" />,
+      bgColor: 'from-amber-500/10 to-orange-500/10',
+      borderColor: 'border-amber-400/30',
+      iconColor: 'text-amber-300',
+      accentColor: 'amber',
+      hoverColor: 'hover:from-amber-500/20 hover:to-orange-500/20'
+    },
+    'Beans': { 
+      icon: <Wheat className="w-4 h-4" />,
+      bgColor: 'from-brown-500/10 to-amber-500/10',
+      borderColor: 'border-brown-400/30',
+      iconColor: 'text-amber-300',
+      accentColor: 'amber',
+      hoverColor: 'hover:from-brown-500/20 hover:to-amber-500/20'
+    },
   };
 
-  // Prepare child categories for rendering, including an "All" option
+  // Default configuration for unknown child categories
+  const defaultConfig = {
+    icon: <Layers className="w-4 h-4" />,
+    bgColor: 'from-green-500/10 to-emerald-500/10',
+    borderColor: 'border-green-400/30',
+    iconColor: 'text-green-300',
+    accentColor: 'green',
+    hoverColor: 'hover:from-green-500/20 hover:to-emerald-500/20'
+  };
+
+  // Prepare child categories for rendering, including an "All Child Categories" option
   const categories = [
     { 
       _id: null, 
       name: 'All', 
       parentCategory: 'All',
       icon: <Sparkles className="w-4 h-4" />,
-      bgColor: 'from-blue-500/10 via-indigo-500/10 to-purple-500/10',
-      borderColor: 'border-blue-400/30',
-      iconColor: 'text-indigo-300',
-      accentColor: 'indigo',
-      hoverColor: 'hover:from-blue-500/20 hover:via-indigo-500/20 hover:to-purple-500/20'
+      bgColor: 'from-green-500/10 via-emerald-500/10 to-lime-500/10',
+      borderColor: 'border-green-400/30',
+      iconColor: 'text-emerald-300',
+      accentColor: 'emerald',
+      hoverColor: 'hover:from-green-500/20 hover:via-emerald-500/20 hover:to-lime-500/20',
+      count: '∞' 
     },
     ...childCategories.map(cat => {
-      // Use default config for all (removed vegetable-specific hardcoding)
-      const config = defaultConfig;
-      
+      const config = childCategoryConfigs[cat.name] || defaultConfig;
       // Get parent category name
       const parentCat = categoriesData.find(c => c._id === cat.parentCategory);
       const parentName = parentCat?.name || 'Parent';
@@ -73,28 +189,28 @@ export default function FeaturedProductsWithSidebar({ addToCart, setQuickViewPro
         borderColor: config.borderColor,
         iconColor: config.iconColor,
         accentColor: config.accentColor,
-        hoverColor: config.hoverColor
+        hoverColor: config.hoverColor,
+        count: Math.floor((cat.name.charCodeAt(0) * 13) % 40) + 5 // Deterministic mock count
       };
     }),
   ];
 
   // Fetch products based on the selected child category
-  const { data: rawProducts = [], isLoading: productsLoading } = useGetApprovedProductsQuery({
-    category: activeCategory || undefined,
+  const { data: rawProductsData, isLoading: productsLoading } = useGetApprovedProductsQuery({
+    category: activeCategory ? activeCategory : undefined,
   });
 
-  // Safely normalize products to array
-  const products = Array.isArray(rawProducts)
-    ? rawProducts
-    : rawProducts?.products || rawProducts?.data || [];
+  // Safely normalize products to an array
+  const products = Array.isArray(rawProductsData) 
+    ? rawProductsData 
+    : rawProductsData?.data || rawProductsData?.products || [];
 
-  // Build image URL function (handles relative paths)
+  // Build image URL function
   const buildImageUrl = (imagePath) => {
     if (!imagePath) return '/placeholder-product.png';
     if (imagePath.startsWith('http')) return imagePath;
-    
-    let processed = imagePath.startsWith('/') ? imagePath : `/${imagePath}`;
-    return `${API_BASE}${processed.replace(/\\/g, '/')}`;
+    if (imagePath.startsWith('/')) return imagePath;
+    return `${API_BASE}/${imagePath.replace(/\\/g, '/')}`;
   };
 
   // Scroll functions for categories row
@@ -110,16 +226,40 @@ export default function FeaturedProductsWithSidebar({ addToCart, setQuickViewPro
     }
   };
 
+  // Client-side particles (purely decorative) - kept as-is even though not used in JSX
+  const [particles, setParticles] = useState([]);
+  useEffect(() => {
+    // only generate on client
+    if (typeof window !== 'undefined') {
+      const newParticles = [...Array(8)].map(() => ({
+        initialX: Math.random() * window.innerWidth,
+        initialY: Math.random() * (window.innerHeight * 0.4),
+        animateXOffset: Math.random() * 12 - 6,
+        duration: 3 + Math.random() * 2,
+        delay: Math.random() * 2,
+        size: Math.random() * 1.5 + 0.5,
+      }));
+      setParticles(newParticles);
+    }
+  }, []);
+
   // Helper function to get active state styles
   const getActiveStyles = (category) => {
-    if (!category.accentColor) return 'bg-gradient-to-r from-blue-500 to-indigo-600 text-white border-transparent shadow-lg';
+    if (!category.accentColor) return 'bg-gradient-to-r from-green-500 to-emerald-600 text-white border-transparent shadow-lg';
     
     const accentMap = {
-      blue: 'bg-gradient-to-r from-blue-500 to-blue-600 text-white border-transparent shadow-lg',
-      indigo: 'bg-gradient-to-r from-indigo-500 to-indigo-600 text-white border-transparent shadow-lg',
+      green: 'bg-gradient-to-r from-green-500 to-green-600 text-white border-transparent shadow-lg',
+      emerald: 'bg-gradient-to-r from-emerald-500 to-emerald-600 text-white border-transparent shadow-lg',
+      orange: 'bg-gradient-to-r from-orange-500 to-orange-600 text-white border-transparent shadow-lg',
+      amber: 'bg-gradient-to-r from-amber-500 to-amber-600 text-white border-transparent shadow-lg',
+      lime: 'bg-gradient-to-r from-lime-500 to-lime-600 text-white border-transparent shadow-lg',
+      pink: 'bg-gradient-to-r from-pink-500 to-pink-600 text-white border-transparent shadow-lg',
+      red: 'bg-gradient-to-r from-red-500 to-red-600 text-white border-transparent shadow-lg',
+      yellow: 'bg-gradient-to-r from-yellow-500 to-yellow-600 text-white border-transparent shadow-lg',
+      purple: 'bg-gradient-to-r from-purple-500 to-purple-600 text-white border-transparent shadow-lg',
     };
     
-    return accentMap[category.accentColor] || accentMap.blue;
+    return accentMap[category.accentColor] || accentMap.green;
   };
 
   // Top 8 categories for mobile (shorter list for better mobile UX)
@@ -127,21 +267,21 @@ export default function FeaturedProductsWithSidebar({ addToCart, setQuickViewPro
 
   return (
     <section
-      className="w-full bg-gradient-to-br from-blue-800 via-indigo-800 to-blue-900 py-4 md:py-8 lg:py-12 relative overflow-hidden"
+      className="w-full bg-gradient-to-br from-green-800 via-emerald-800 to-green-900 py-4 md:py-8 lg:py-12 relative overflow-hidden"
       aria-label="Featured products"
     >
-      {/* Background Elements (neutral) */}
+      {/* Enhanced Background Elements */}
       <div className="pointer-events-none" aria-hidden>
         <motion.div
           initial={{ opacity: 0, scale: 0.8 }}
           animate={{ opacity: 1, scale: 1 }}
-          className="absolute -top-20 -right-16 w-40 h-40 bg-blue-600/20 rounded-full blur-2xl md:blur-3xl"
+          className="absolute -top-20 -right-16 w-40 h-40 bg-green-600/20 rounded-full blur-2xl md:blur-3xl"
         />
         <motion.div
           initial={{ opacity: 0, scale: 0.8 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ delay: 0.15 }}
-          className="absolute -bottom-16 -left-16 w-36 h-36 bg-indigo-600/20 rounded-full blur-2xl md:blur-3xl"
+          className="absolute -bottom-16 -left-16 w-36 h-36 bg-emerald-600/20 rounded-full blur-2xl md:blur-3xl"
         />
       </div>
 
@@ -154,10 +294,10 @@ export default function FeaturedProductsWithSidebar({ addToCart, setQuickViewPro
               animate={{ x: 0, opacity: 1 }}
               className="text-lg font-bold text-white flex items-center gap-2"
             >
-              <div className="p-1.5 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-lg">
+              <div className="p-1.5 bg-gradient-to-r from-green-500 to-emerald-500 rounded-lg">
                 <Layers className="w-4 h-4 text-white" />
               </div>
-              Featured Products
+              Specialized Products
             </motion.h2>
             
             <div className="flex items-center gap-1">
@@ -165,14 +305,14 @@ export default function FeaturedProductsWithSidebar({ addToCart, setQuickViewPro
               <div className="flex items-center bg-white/10 backdrop-blur-sm rounded-lg p-0.5">
                 <button
                   onClick={() => setMobileViewMode('grid')}
-                  className={`p-1.5 rounded-md transition-all ${mobileViewMode === 'grid' ? 'bg-blue-500 text-white' : 'text-blue-100'}`}
+                  className={`p-1.5 rounded-md transition-all ${mobileViewMode === 'grid' ? 'bg-green-500 text-white' : 'text-green-100'}`}
                   aria-label="Grid view"
                 >
                   <Grid className="w-4 h-4" />
                 </button>
                 <button
                   onClick={() => setMobileViewMode('list')}
-                  className={`p-1.5 rounded-md transition-all ${mobileViewMode === 'list' ? 'bg-blue-500 text-white' : 'text-blue-100'}`}
+                  className={`p-1.5 rounded-md transition-all ${mobileViewMode === 'list' ? 'bg-green-500 text-white' : 'text-green-100'}`}
                   aria-label="List view"
                 >
                   <Filter className="w-4 h-4" />
@@ -209,7 +349,7 @@ export default function FeaturedProductsWithSidebar({ addToCart, setQuickViewPro
                   className={`flex flex-col items-center justify-center p-2 rounded-xl border transition-all ${
                     activeCategory === cat._id
                       ? getActiveStyles(cat) + ' shadow-md'
-                      : `bg-gradient-to-r ${cat.bgColor} text-blue-100 border ${cat.borderColor}`
+                      : `bg-gradient-to-r ${cat.bgColor} text-green-100 border ${cat.borderColor}`
                   }`}
                 >
                   <div className={`p-1.5 rounded-lg mb-1 ${activeCategory === cat._id ? 'bg-white/20 text-white' : `bg-white/10 ${cat.iconColor}`}`}>
@@ -226,7 +366,7 @@ export default function FeaturedProductsWithSidebar({ addToCart, setQuickViewPro
             <motion.button
               whileTap={{ scale: 0.95 }}
               onClick={() => setShowMobileCategories(!showMobileCategories)}
-              className="flex items-center gap-1.5 text-xs text-blue-200 font-medium px-3 py-1.5 bg-white/5 rounded-full border border-white/10"
+              className="flex items-center gap-1.5 text-xs text-green-200 font-medium px-3 py-1.5 bg-white/5 rounded-full border border-white/10"
             >
               {showMobileCategories ? 'Show Less' : 'All Categories'}
               <ChevronRight className={`w-3 h-3 transition-transform ${showMobileCategories ? 'rotate-90' : ''}`} />
@@ -257,7 +397,7 @@ export default function FeaturedProductsWithSidebar({ addToCart, setQuickViewPro
                         className={`flex flex-col items-center justify-center p-2 rounded-lg text-xs font-medium transition-all ${
                           activeCategory === cat._id
                             ? getActiveStyles(cat) + ' shadow-md'
-                            : `bg-gradient-to-r ${cat.bgColor} text-blue-100 border ${cat.borderColor}`
+                            : `bg-gradient-to-r ${cat.bgColor} text-green-100 border ${cat.borderColor}`
                         }`}
                       >
                         <div className={`p-1 rounded-md mb-1 ${
@@ -277,7 +417,7 @@ export default function FeaturedProductsWithSidebar({ addToCart, setQuickViewPro
           </AnimatePresence>
         </div>
 
-        {/* Desktop Categories Row */}
+        {/* Desktop Child Categories Row */}
         <motion.div
           initial={{ y: -20, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
@@ -291,15 +431,15 @@ export default function FeaturedProductsWithSidebar({ addToCart, setQuickViewPro
               transition={{ delay: 0.2 }}
               className="text-xl lg:text-2xl font-bold text-white flex items-center gap-3"
             >
-              <div className="p-2 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-xl shadow-lg">
+              <div className="p-2 bg-gradient-to-r from-green-500 to-emerald-500 rounded-xl shadow-lg">
                 <Layers className="w-5 h-5 text-white" />
               </div>
-              Browse Categories
+              Browse Specialized Categories
             </motion.h2>
             
             <div className="flex items-center gap-2">
-              <div className="hidden lg:flex items-center text-sm bg-gradient-to-r from-indigo-500 to-purple-500 text-white px-3 py-1.5 rounded-full shadow-lg">
-                {categories.length} Categories
+              <div className="hidden lg:flex items-center text-sm bg-gradient-to-r from-amber-500 to-yellow-500 text-white px-3 py-1.5 rounded-full shadow-lg">
+                {categories.length} Specialized
               </div>
               <div className="flex items-center gap-1">
                 <motion.button 
@@ -324,17 +464,17 @@ export default function FeaturedProductsWithSidebar({ addToCart, setQuickViewPro
             </div>
           </div>
 
-          {/* Categories Scroll Container */}
+          {/* Child Categories Scroll Container */}
           <div
             ref={scrollContainerRef}
             className="flex gap-3 overflow-x-auto no-scrollbar pb-4 -ml-1 pl-1"
             role="tablist"
-            aria-label="Product categories"
+            aria-label="Specialized product categories"
           >
             {categoriesLoading ? (
               <div className="flex gap-3">
                 {[...Array(6)].map((_, i) => (
-                  <div key={i} className="flex-shrink-0 w-32 h-20 bg-blue-600/30 rounded-xl animate-pulse" />
+                  <div key={i} className="flex-shrink-0 w-32 h-20 bg-green-600/30 rounded-xl animate-pulse" />
                 ))}
               </div>
             ) : (
@@ -349,10 +489,10 @@ export default function FeaturedProductsWithSidebar({ addToCart, setQuickViewPro
                   onClick={() => setActiveCategory(cat._id)}
                   role="tab"
                   aria-selected={activeCategory === cat._id}
-                  className={`flex-shrink-0 w-36 lg:w-40 flex flex-col items-center justify-center gap-2 p-4 rounded-2xl font-semibold transition-all duration-300 border-2 focus:outline-none focus:ring-2 focus:ring-blue-400 ${
+                  className={`flex-shrink-0 w-36 lg:w-40 flex flex-col items-center justify-center gap-2 p-4 rounded-2xl font-semibold transition-all duration-300 border-2 focus:outline-none focus:ring-2 focus:ring-green-400 ${
                     activeCategory === cat._id
                       ? getActiveStyles(cat) + ' shadow-xl'
-                      : `bg-gradient-to-r ${cat.bgColor} text-blue-100 border ${cat.borderColor} ${cat.hoverColor} hover:shadow-lg`
+                      : `bg-gradient-to-r ${cat.bgColor} text-green-100 border ${cat.borderColor} ${cat.hoverColor} hover:shadow-lg`
                   }`}
                 >
                   <div className={`p-2 rounded-xl transition-all duration-300 ${
@@ -365,11 +505,16 @@ export default function FeaturedProductsWithSidebar({ addToCart, setQuickViewPro
                   <div className="flex flex-col items-center">
                     <span className="text-sm font-semibold text-center leading-tight">{cat.name}</span>
                     {cat.parentName && cat.parentName !== 'All' && (
-                      <span className="text-xs text-blue-200/70 mt-1 px-2 py-0.5 bg-black/20 rounded-full">
+                      <span className="text-xs text-green-200/70 mt-1 px-2 py-0.5 bg-black/20 rounded-full">
                         {cat.parentName}
                       </span>
                     )}
                   </div>
+                  <span className={`text-xs ${
+                    activeCategory === cat._id ? 'text-white/80' : 'text-green-200/70'
+                  }`}>
+                    {cat.count} items
+                  </span>
                 </motion.button>
               ))
             )}
@@ -389,10 +534,10 @@ export default function FeaturedProductsWithSidebar({ addToCart, setQuickViewPro
                 initial={{ y: -8, opacity: 0 }} 
                 animate={{ y: 0, opacity: 1 }} 
                 transition={{ delay: 0.3 }}
-                className="inline-flex items-center gap-2 bg-gradient-to-r from-indigo-500 to-purple-500 text-white px-3 md:px-4 py-1.5 md:py-2 rounded-full mb-3 shadow-lg"
+                className="inline-flex items-center gap-2 bg-gradient-to-r from-amber-500 to-yellow-500 text-white px-3 md:px-4 py-1.5 md:py-2 rounded-full mb-3 shadow-lg"
               >
-                <Sparkles className="w-3 md:w-4 h-3 md:h-4" />
-                <span className="text-xs md:text-sm font-bold">FEATURED COLLECTION</span>
+                <Flame className="w-3 md:w-4 h-3 md:h-4" />
+                <span className="text-xs md:text-sm font-bold">SPECIALIZED COLLECTION</span>
               </motion.div>
 
               <motion.h2 
@@ -401,16 +546,16 @@ export default function FeaturedProductsWithSidebar({ addToCart, setQuickViewPro
                 transition={{ delay: 0.4 }} 
                 className="text-xl md:text-2xl lg:text-3xl xl:text-4xl font-bold text-white mb-2"
               >
-                Premium <span className="text-purple-300">Featured</span> Products
+                Premium <span className="text-yellow-300">Specialized</span> Products
               </motion.h2>
 
               <motion.p 
                 initial={{ y: 8, opacity: 0 }} 
                 animate={{ y: 0, opacity: 1 }} 
                 transition={{ delay: 0.5 }} 
-                className="text-sm md:text-base text-blue-100 max-w-2xl"
+                className="text-sm md:text-base text-green-100 max-w-2xl"
               >
-                Discover featured products from our curated categories with high quality and great value
+                Discover specialized products from our curated categories with <span className="font-semibold text-yellow-300">expert-selected quality</span> and premium freshness
               </motion.p>
             </div>
 
@@ -447,11 +592,11 @@ export default function FeaturedProductsWithSidebar({ addToCart, setQuickViewPro
                     transition={{ delay: i * 0.03 }}
                     className="bg-white/10 backdrop-blur-sm rounded-xl md:rounded-2xl border border-white/20 shadow-lg overflow-hidden animate-pulse"
                   >
-                    <div className="h-32 md:h-36 lg:h-40 bg-blue-600/30" />
+                    <div className="h-32 md:h-36 lg:h-40 bg-green-600/30" />
                     <div className="p-3 md:p-4 space-y-2">
-                      <div className="h-3 bg-blue-600/30 rounded w-3/4" />
-                      <div className="h-3 bg-blue-600/30 rounded w-1/2" />
-                      <div className="h-8 bg-blue-600/30 rounded-lg md:rounded-xl w-full" />
+                      <div className="h-3 bg-green-600/30 rounded w-3/4" />
+                      <div className="h-3 bg-green-600/30 rounded w-1/2" />
+                      <div className="h-8 bg-green-600/30 rounded-lg md:rounded-xl w-full" />
                     </div>
                   </motion.div>
                 ) : (
@@ -462,11 +607,11 @@ export default function FeaturedProductsWithSidebar({ addToCart, setQuickViewPro
                     transition={{ delay: i * 0.03 }}
                     className="bg-white/10 backdrop-blur-sm rounded-xl border border-white/20 shadow-lg p-3 animate-pulse flex items-center gap-3"
                   >
-                    <div className="w-20 h-20 bg-blue-600/30 rounded-lg" />
+                    <div className="w-20 h-20 bg-green-600/30 rounded-lg" />
                     <div className="flex-1 space-y-2">
-                      <div className="h-3 bg-blue-600/30 rounded w-3/4" />
-                      <div className="h-3 bg-blue-600/30 rounded w-1/2" />
-                      <div className="h-6 bg-blue-600/30 rounded-lg w-full" />
+                      <div className="h-3 bg-green-600/30 rounded w-3/4" />
+                      <div className="h-3 bg-green-600/30 rounded w-1/2" />
+                      <div className="h-6 bg-green-600/30 rounded-lg w-full" />
                     </div>
                   </motion.div>
                 )
@@ -482,12 +627,12 @@ export default function FeaturedProductsWithSidebar({ addToCart, setQuickViewPro
                 <Sparkles className="h-6 w-6 md:h-8 md:w-8 text-white" />
               </div>
               <h3 className="text-lg md:text-xl font-bold text-white mb-2">No Products Found</h3>
-              <p className="text-sm md:text-base text-blue-100 mb-4">No products available in this category at the moment. Check back soon or explore other categories!</p>
+              <p className="text-sm md:text-base text-green-100 mb-4">We're preparing amazing specialized products for this category. Check back soon or explore other specialized categories!</p>
               <motion.button 
                 whileHover={{ scale: 1.05 }} 
                 whileTap={{ scale: 0.95 }} 
                 onClick={() => setActiveCategory(null)} 
-                className="bg-gradient-to-r from-indigo-500 to-purple-500 text-white px-5 md:px-6 py-2.5 md:py-3 rounded-lg md:rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all duration-200 text-sm md:text-base"
+                className="bg-gradient-to-r from-amber-500 to-yellow-500 text-white px-5 md:px-6 py-2.5 md:py-3 rounded-lg md:rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all duration-200 text-sm md:text-base"
               >
                 Show All Products
               </motion.button>
@@ -548,16 +693,16 @@ export default function FeaturedProductsWithSidebar({ addToCart, setQuickViewPro
                               />
                             ))}
                           </div>
-                          <span className="text-xs text-blue-100">({product.reviewCount || 24})</span>
+                          <span className="text-xs text-green-100">({product.reviewCount || 24})</span>
                         </div>
 
                         {/* Price */}
                         <div className="mb-2">
-                          <p className="text-lg font-bold text-purple-300">
+                          <p className="text-lg font-bold text-yellow-300">
                             {product.price} PKR
                           </p>
                           {product.originalPrice && product.originalPrice > product.price && (
-                            <p className="text-xs line-through text-blue-200">{product.originalPrice} PKR</p>
+                            <p className="text-xs line-through text-green-200">{product.originalPrice} PKR</p>
                           )}
                         </div>
                       </div>
@@ -569,7 +714,7 @@ export default function FeaturedProductsWithSidebar({ addToCart, setQuickViewPro
                         disabled={!product.inStock}
                         className={`w-full py-2 px-3 rounded-lg font-semibold shadow-md transition-all duration-200 text-sm ${
                           product.inStock
-                            ? 'bg-gradient-to-r from-indigo-500 to-purple-500 text-white'
+                            ? 'bg-gradient-to-r from-amber-500 to-yellow-500 text-white'
                             : 'bg-white/20 text-white/70 cursor-not-allowed'
                         }`}
                       >
@@ -595,6 +740,8 @@ export default function FeaturedProductsWithSidebar({ addToCart, setQuickViewPro
                     exit={{ opacity: 0, scale: 0.98 }}
                     transition={{ delay: index * 0.02, type: 'spring', stiffness: 120, damping: 16 }}
                     whileHover={{ y: -4, scale: 1.02 }}
+                    onHoverStart={() => setHoveredProduct(product._id)}
+                    onHoverEnd={() => setHoveredProduct(null)}
                     className="relative group"
                   >
                     <div className="bg-white/10 backdrop-blur-sm rounded-xl md:rounded-2xl border border-white/20 shadow-lg hover:shadow-xl md:hover:shadow-2xl transition-all duration-300 overflow-hidden h-full flex flex-col relative">
@@ -620,9 +767,9 @@ export default function FeaturedProductsWithSidebar({ addToCart, setQuickViewPro
                           <motion.div 
                             initial={{ scale: 0, rotate: -180 }}
                             animate={{ scale: 1, rotate: 0 }}
-                            className="flex items-center gap-1 bg-gradient-to-r from-indigo-500 to-purple-500 text-white px-1.5 md:px-2 py-0.5 md:py-1 rounded-full text-xs font-bold shadow-lg"
+                            className="flex items-center gap-1 bg-gradient-to-r from-amber-500 to-yellow-500 text-white px-1.5 md:px-2 py-0.5 md:py-1 rounded-full text-xs font-bold shadow-lg"
                           >
-                            <Sparkles className="w-2.5 md:w-3 h-2.5 md:h-3" />
+                            <Zap className="w-2.5 md:w-3 h-2.5 md:h-3" />
                             <span className="text-xs">{product.coupons[0]?.discount || '10%'} OFF</span>
                           </motion.div>
                         )}
@@ -631,9 +778,9 @@ export default function FeaturedProductsWithSidebar({ addToCart, setQuickViewPro
                             initial={{ scale: 0, rotate: 180 }}
                             animate={{ scale: 1, rotate: 0 }}
                             transition={{ delay: 0.1 }}
-                            className="flex items-center gap-1 bg-gradient-to-r from-blue-500 to-indigo-500 text-white px-1.5 md:px-2 py-0.5 md:py-1 rounded-full text-xs font-bold shadow-lg"
+                            className="flex items-center gap-1 bg-gradient-to-r from-green-500 to-emerald-500 text-white px-1.5 md:px-2 py-0.5 md:py-1 rounded-full text-xs font-bold shadow-lg"
                           >
-                            <TrendingUp className="w-2.5 md:w-3 h-2.5 md:h-3" />
+                            <Flame className="w-2.5 md:w-3 h-2.5 md:h-3" />
                             <span className="text-xs">HOT DEAL</span>
                           </motion.div>
                         )}
@@ -660,11 +807,11 @@ export default function FeaturedProductsWithSidebar({ addToCart, setQuickViewPro
                       <div className="p-3 md:p-4 flex-1 flex flex-col">
                         <div className="flex-1">
                           <Link href={`/product/${product.slug}`}>
-                            <h3 className="text-sm md:text-base font-semibold text-white leading-tight line-clamp-2 mb-1 md:mb-2 hover:text-purple-300 transition-colors duration-200">
+                            <h3 className="text-sm md:text-base font-semibold text-white leading-tight line-clamp-2 mb-1 md:mb-2 hover:text-yellow-300 transition-colors duration-200">
                               {product.name}
                             </h3>
                           </Link>
-                          <p className="text-xs text-blue-100 mb-2 md:mb-3 line-clamp-1">by {product.seller?.user?.name || 'Premium Seller'}</p>
+                          <p className="text-xs text-green-100 mb-2 md:mb-3 line-clamp-1">by {product.seller?.user?.name || 'Premium Seller'}</p>
 
                           {/* Rating */}
                           <div className="flex items-center justify-between mb-2 md:mb-3">
@@ -677,24 +824,24 @@ export default function FeaturedProductsWithSidebar({ addToCart, setQuickViewPro
                                   />
                                 ))}
                               </div>
-                              <span className="text-xs text-blue-100">({product.reviewCount || 24})</span>
+                              <span className="text-xs text-green-100">({product.reviewCount || 24})</span>
                             </div>
                           </div>
 
                           {/* Price */}
                           <div className="flex items-center justify-between mb-3 md:mb-4">
                             <div>
-                              <p className="text-base md:text-lg font-bold text-purple-300">
+                              <p className="text-base md:text-lg font-bold text-yellow-300">
                                 {product.price} PKR
                               </p>
                               {product.originalPrice && product.originalPrice > product.price && (
-                                <p className="text-xs md:text-sm line-through text-blue-200">{product.originalPrice} PKR</p>
+                                <p className="text-xs md:text-sm line-through text-green-200">{product.originalPrice} PKR</p>
                               )}
                             </div>
                             {product.originalPrice && product.originalPrice > product.price && (
                               <div className="text-right hidden md:block">
-                                <p className="text-xs text-blue-100">You save</p>
-                                <p className="text-xs md:text-sm font-bold text-indigo-300">
+                                <p className="text-xs text-green-100">You save</p>
+                                <p className="text-xs md:text-sm font-bold text-amber-300">
                                   {product.originalPrice - product.price} PKR
                                 </p>
                               </div>
@@ -711,7 +858,7 @@ export default function FeaturedProductsWithSidebar({ addToCart, setQuickViewPro
                             disabled={!product.inStock}
                             className={`w-full py-2.5 md:py-3 px-3 md:px-4 rounded-lg md:rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all duration-200 relative overflow-hidden text-sm md:text-base ${
                               product.inStock
-                                ? 'bg-gradient-to-r from-indigo-500 to-purple-500 text-white hover:from-indigo-600 hover:to-purple-600'
+                                ? 'bg-gradient-to-r from-amber-500 to-yellow-500 text-white hover:from-amber-600 hover:to-yellow-600'
                                 : 'bg-white/20 text-white/70 cursor-not-allowed'
                             }`}
                           >
