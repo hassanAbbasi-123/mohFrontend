@@ -430,7 +430,58 @@ const SignUpPage = () => {
             }}></div>
           </div>
         </div>
-
+{/* Back to Home Button - Mobile Responsive */}
+<motion.div
+  initial={{ opacity: 0, y: -20 }}
+  animate={{ opacity: 1, y: 0 }}
+  transition={{ duration: 0.5 }}
+  className="fixed top-3 left-3 xs:top-4 xs:left-4 sm:top-5 sm:left-5 md:top-6 md:left-6 lg:top-7 lg:left-7 z-50"
+>
+  <motion.a
+    href="/"
+    whileHover={{ scale: 1.05 }}
+    whileTap={{ scale: 0.95 }}
+    className="flex items-center space-x-1 xs:space-x-1.5 sm:space-x-2 px-2.5 py-2 xs:px-3 xs:py-2.5 sm:px-3.5 sm:py-2.5 md:px-4 md:py-2.5 lg:px-4.5 lg:py-3 rounded-lg xs:rounded-xl md:rounded-2xl bg-gradient-to-r from-green-600/95 to-emerald-600/95 backdrop-blur-sm border border-green-300/40 hover:border-green-200/60 shadow-md hover:shadow-xl active:shadow-lg transition-all duration-300 group"
+    style={{
+      background: "linear-gradient(135deg, rgba(46, 139, 87, 0.95) 0%, rgba(60, 179, 113, 0.95) 100%)",
+      boxShadow: "0 3px 15px rgba(0, 100, 0, 0.25)",
+    }}
+  >
+    {/* Mobile-first arrow icon */}
+    <motion.svg
+      className="w-3 h-3 xs:w-3.5 xs:h-3.5 sm:w-4 sm:h-4 md:w-4.5 md:h-4.5 lg:w-5 lg:h-5 text-green-100 group-hover:text-white transition-colors"
+      fill="none"
+      stroke="currentColor"
+      viewBox="0 0 24 24"
+      animate={{ x: [-1, 0, -1] }}
+      transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
+      style={{ strokeWidth: "2.5px" }}
+    >
+      <path strokeLinecap="round" strokeLinejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+    </motion.svg>
+    
+    {/* Text that hides on very small screens, shows on mobile and up */}
+    <span className="hidden xs:inline text-green-100 font-medium text-xs xs:text-xs sm:text-sm md:text-sm lg:text-base group-hover:text-white transition-colors whitespace-nowrap">
+      Back to Home
+    </span>
+    
+    {/* Mobile-only home icon (shows on very small screens) */}
+    <svg 
+      className="xs:hidden w-3.5 h-3.5 text-green-100 group-hover:text-white transition-colors" 
+      fill="none" 
+      stroke="currentColor" 
+      viewBox="0 0 24 24"
+    >
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+    </svg>
+  </motion.a>
+  
+  {/* Optional tooltip for mobile - appears on hover/tap */}
+  <div className="absolute top-full left-1/2 transform -translate-x-1/2 mt-1 px-2 py-1 bg-green-800/90 backdrop-blur-sm text-green-100 text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none whitespace-nowrap border border-green-500/30">
+    Go to Homepage
+    <div className="absolute -top-1 left-1/2 transform -translate-x-1/2 w-2 h-2 bg-green-800/90 rotate-45 border-l border-t border-green-500/30"></div>
+  </div>
+</motion.div>
         <div className="container mx-auto flex flex-col lg:flex-row items-center justify-center gap-6 lg:gap-12 max-w-7xl relative z-10">
           {/* Left Section */}
           <motion.div 
