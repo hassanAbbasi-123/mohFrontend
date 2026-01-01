@@ -81,6 +81,8 @@ export default function AccountManagement() {
     const [showReminderModal, setShowReminderModal] = useState(false);
     const [showCustomerTransactionsModal, setShowCustomerTransactionsModal] = useState(false);
     const [showCommissionCandidateModal, setShowCommissionCandidateModal] = useState(false);
+    const [showSuccessModal, setShowSuccessModal] = useState(false);
+    const [successData, setSuccessData] = useState({ message: '', customerId: '' });
 
     // RTK Query Hooks
     const {
@@ -280,12 +282,19 @@ export default function AccountManagement() {
         totalPurchaseCommission: profitLossReport.totalPurchaseCommission || 0,
     };
 
-    // Handler functions
+    // Update the handleCreateCustomer function:
     const handleCreateCustomer = async () => {
         try {
             const result = await createCustomer(customerForm).unwrap();
             if (result.status === 'success') {
-                alert('Customer created successfully!');
+                const customerData = result.data?.customer;
+                setSuccessData({
+                    message: 'Customer created successfully!',
+                    customerId: customerData?.customerId || 'N/A',
+                    name: customerData?.name || customerForm.name
+                });
+                setShowSuccessModal(true);
+
                 setShowCustomerModal(false);
                 setCustomerForm({ name: '', phone: '', email: '', address: '' });
                 refetchCustomers();
@@ -960,6 +969,13 @@ export default function AccountManagement() {
                 onSubmit={handleCreateCustomer}
                 loading={creatingCustomer}
             />
+
+            // Add this with your other modal components in the return statement
+            <SuccessModal
+                show={showSuccessModal}
+                onClose={() => setShowSuccessModal(false)}
+                data={successData}
+            />
             <PurchaseModal
                 show={showPurchaseModal}
                 onClose={() => setShowPurchaseModal(false)}
@@ -1177,6 +1193,58 @@ function CustomersView({
                         </tbody>
                     </table>
                 )}
+            </div>
+        </div>
+    );
+}
+
+function SuccessModal({ show, onClose, data }) {
+    if (!show) return null;
+
+    return (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+            <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full">
+                <div className="p-6">
+                    <div className="text-center">
+                        <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-green-100 mb-4">
+                            <CheckCircle className="h-6 w-6 text-green-600" />
+                        </div>
+
+                        <h2 className="text-xl font-bold text-gray-800 mb-2">{data.message}</h2>
+
+                        <div className="bg-gray-50 p-4 rounded-lg mb-4">
+                            <div className="space-y-2">
+                                <div className="flex justify-between">
+                                    <span className="text-gray-600">Customer Name:</span>
+                                    <span className="font-semibold">{data.name}</span>
+                                </div>
+                                <div className="flex justify-between">
+                                    <span className="text-gray-600">Customer ID:</span>
+                                    <span className="font-bold text-indigo-600">{data.customerId}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="flex flex-col gap-3 mt-6">
+                            <button
+                                onClick={onClose}
+                                className="bg-indigo-600 hover:bg-indigo-700 text-white py-3 px-4 rounded-xl font-semibold transition-all duration-200"
+                            >
+                                OK
+                            </button>
+                            <button
+                                onClick={() => {
+                                    // Copy customer ID to clipboard
+                                    navigator.clipboard.writeText(data.customerId);
+                                    alert('Customer ID copied to clipboard!');
+                                }}
+                                className="bg-gray-100 hover:bg-gray-200 text-gray-700 py-3 px-4 rounded-xl font-semibold transition-all duration-200"
+                            >
+                                Copy Customer ID
+                            </button>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     );
@@ -1679,6 +1747,31 @@ function ReportsView({ profitLossReport, customers, inventory, period, onPeriodC
 
 // Modal Components
 function CustomerModal({ show, onClose, form, setForm, onSubmit, loading }) {
+    const [showSuccess, setShowSuccess] = useState(false);
+    const [createdCustomerId, setCreatedCustomerId] = useState('');
+
+    const handleSubmit = async () => {
+        try {
+            const result = await createCustomer(form).unwrap();
+            if (result.status === 'success') {
+                const customerId = result.data?.customer?.customerId;
+                setCreatedCustomerId(customerId);
+                setShowSuccess(true);
+
+                // Reset form after 3 seconds and close modal
+                setTimeout(() => {
+                    setShowSuccess(false);
+                    setCreatedCustomerId('');
+                    setForm({ name: '', phone: '', email: '', address: '' });
+                    onClose();
+                    refetchCustomers();
+                }, 3000);
+            }
+        } catch (error) {
+            alert(error?.data?.message || 'Error creating customer');
+        }
+    };
+
     if (!show) return null;
 
     return (
@@ -1688,72 +1781,44 @@ function CustomerModal({ show, onClose, form, setForm, onSubmit, loading }) {
                     <div className="flex items-center justify-between mb-4">
                         <h2 className="text-xl font-bold text-gray-800 flex items-center gap-2">
                             <UserPlus className="w-5 h-5 text-indigo-600" />
-                            Create New Customer
+                            {showSuccess ? 'Customer Created!' : 'Create New Customer'}
                         </h2>
                         <button onClick={onClose} className="text-gray-400 hover:text-gray-600 transition-colors p-1">✕</button>
                     </div>
 
-                    <div className="space-y-4">
-                        <div>
-                            <label className="block text-sm font-semibold text-gray-700 mb-2">Customer Name *</label>
-                            <input
-                                type="text"
-                                value={form.name}
-                                onChange={(e) => setForm({ ...form, name: e.target.value })}
-                                placeholder="Enter customer name"
-                                className="w-full p-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-indigo-200 focus:border-indigo-500 outline-none transition-all duration-200"
-                            />
+                    {showSuccess ? (
+                        <div className="text-center py-8">
+                            <CheckCircle className="w-16 h-16 text-green-500 mx-auto mb-4" />
+                            <p className="text-lg font-semibold text-gray-800 mb-2">Customer created successfully!</p>
+                            <div className="bg-indigo-50 p-4 rounded-lg">
+                                <p className="text-sm text-gray-600">Customer ID:</p>
+                                <p className="text-xl font-bold text-indigo-600">{createdCustomerId}</p>
+                            </div>
+                            <p className="text-sm text-gray-500 mt-4">This modal will close automatically...</p>
                         </div>
+                    ) : (
+                        <>
+                            <div className="space-y-4">
+                                {/* ... existing form fields ... */}
+                            </div>
 
-                        <div>
-                            <label className="block text-sm font-semibold text-gray-700 mb-2">Phone Number *</label>
-                            <input
-                                type="tel"
-                                value={form.phone}
-                                onChange={(e) => setForm({ ...form, phone: e.target.value })}
-                                placeholder="Enter phone number"
-                                className="w-full p-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-indigo-200 focus:border-indigo-500 outline-none transition-all duration-200"
-                            />
-                        </div>
-
-                        <div>
-                            <label className="block text-sm font-semibold text-gray-700 mb-2">Email (Optional)</label>
-                            <input
-                                type="email"
-                                value={form.email}
-                                onChange={(e) => setForm({ ...form, email: e.target.value })}
-                                placeholder="Enter email address"
-                                className="w-full p-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-indigo-200 focus:border-indigo-500 outline-none transition-all duration-200"
-                            />
-                        </div>
-
-                        <div>
-                            <label className="block text-sm font-semibold text-gray-700 mb-2">Address</label>
-                            <textarea
-                                value={form.address}
-                                onChange={(e) => setForm({ ...form, address: e.target.value })}
-                                placeholder="Enter customer address"
-                                rows="3"
-                                className="w-full p-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-indigo-200 focus:border-indigo-500 outline-none transition-all duration-200 resize-none"
-                            />
-                        </div>
-                    </div>
-
-                    <div className="flex gap-3 mt-6">
-                        <button
-                            onClick={onClose}
-                            className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 py-3 px-4 rounded-xl font-semibold transition-all duration-200"
-                        >
-                            Cancel
-                        </button>
-                        <button
-                            onClick={onSubmit}
-                            disabled={loading || !form.name || !form.phone}
-                            className="flex-1 bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-400 text-white py-3 px-4 rounded-xl font-semibold transition-all duration-200 flex items-center justify-center gap-2 disabled:cursor-not-allowed"
-                        >
-                            {loading ? <><RefreshCw className="w-4 h-4 animate-spin" />Creating...</> : <><UserPlus className="w-4 h-4" />Create Account</>}
-                        </button>
-                    </div>
+                            <div className="flex gap-3 mt-6">
+                                <button
+                                    onClick={onClose}
+                                    className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 py-3 px-4 rounded-xl font-semibold transition-all duration-200"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    onClick={handleSubmit}
+                                    disabled={loading || !form.name || !form.phone}
+                                    className="flex-1 bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-400 text-white py-3 px-4 rounded-xl font-semibold transition-all duration-200 flex items-center justify-center gap-2 disabled:cursor-not-allowed"
+                                >
+                                    {loading ? <><RefreshCw className="w-4 h-4 animate-spin" />Creating...</> : <><UserPlus className="w-4 h-4" />Create Account</>}
+                                </button>
+                            </div>
+                        </>
+                    )}
                 </div>
             </div>
         </div>

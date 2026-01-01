@@ -80,7 +80,7 @@ export default function LeadsManagement() {
     // Filter leads based on active tab and search
     const getFilteredLeads = () => {
         let leads = [];
-        
+
         if (activeTab === "pending") {
             leads = pendingLeads;
         } else if (activeTab === "payments") {
@@ -115,7 +115,7 @@ export default function LeadsManagement() {
     // Categories for filtering
     const categories = [
         "Vegetables",
-        "Fruits", 
+        "Fruits",
         "Pulses",
         "Grains",
         "Spices",
@@ -182,13 +182,25 @@ export default function LeadsManagement() {
     const handleVerifyPayment = async (purchaseId) => {
         try {
             await verifyPayment(purchaseId).unwrap();
-            
+
+            // Show success message
             alert("Payment verified successfully! Chat created between buyer and seller.");
+
             setShowPaymentModal(false);
             setSelectedPurchase(null);
+
+            // Refresh data
             refetchPendingPayments();
             refetchAllLeads();
             refetchAnalytics();
+
+            // Trigger chat refresh
+            setTimeout(() => {
+                if (window.dispatchEvent) {
+                    window.dispatchEvent(new Event('refresh-chats'));
+                }
+            }, 1000);
+
         } catch (error) {
             console.error("Failed to verify payment:", error);
             alert("Failed to verify payment: " + (error?.data?.message || "Unknown error"));
@@ -302,19 +314,17 @@ export default function LeadsManagement() {
                             <button
                                 key={tab.id}
                                 onClick={() => setActiveTab(tab.id)}
-                                className={`flex items-center gap-2 px-6 py-4 border-b-2 font-medium text-sm transition-all duration-200 ${
-                                    activeTab === tab.id
+                                className={`flex items-center gap-2 px-6 py-4 border-b-2 font-medium text-sm transition-all duration-200 ${activeTab === tab.id
                                         ? "border-indigo-600 text-indigo-600 bg-indigo-50"
                                         : "border-transparent text-gray-500 hover:text-gray-700 hover:bg-gray-50"
-                                }`}
+                                    }`}
                             >
                                 <tab.icon className="w-4 h-4" />
                                 {tab.name}
-                                <span className={`px-2 py-1 rounded-full text-xs ${
-                                    activeTab === tab.id
+                                <span className={`px-2 py-1 rounded-full text-xs ${activeTab === tab.id
                                         ? "bg-indigo-100 text-indigo-600"
                                         : "bg-gray-100 text-gray-600"
-                                }`}>
+                                    }`}>
                                     {tabCounts[tab.id]}
                                 </span>
                             </button>
@@ -331,7 +341,7 @@ export default function LeadsManagement() {
                             <input
                                 type="text"
                                 placeholder={
-                                    activeTab === "payments" 
+                                    activeTab === "payments"
                                         ? "Search payments by seller, product, or lead..."
                                         : "Search leads by product, buyer, category, or location..."
                                 }
@@ -636,7 +646,7 @@ function LeadRow({ lead, onApprove, onReject, activeTab }) {
                         <StatusIcon className="w-3 h-3" />
                         {lead.status?.charAt(0).toUpperCase() + lead.status?.slice(1)}
                     </span>
-                    
+
                     {(lead.status === "approved" || lead.status === "sold") && lead.lead_price ? (
                         <div className="flex items-center gap-1 text-sm font-semibold text-green-600">
                             <DollarSign className="w-4 h-4" />
@@ -689,7 +699,7 @@ function LeadRow({ lead, onApprove, onReject, activeTab }) {
                             </button>
                         </>
                     )}
-                    
+
                     {lead.status === "approved" && (
                         <button
                             onClick={() => onApprove(lead)}
@@ -713,26 +723,26 @@ function LeadRow({ lead, onApprove, onReject, activeTab }) {
 function PaymentVerificationModal({ purchase, onVerify, onClose, loading }) {
     const lead = purchase?.lead;
     const seller = purchase?.seller;
-    
+
     // Fix the image URL if needed
     const getImageUrl = (url) => {
         if (!url) return null;
-        
+
         // If URL doesn't start with http or /, prepend server URL
         if (!url.startsWith('http') && !url.startsWith('/')) {
             return `http://localhost:5000${url}`;
         }
-        
+
         // If URL starts with /uploads but doesn't have full path
         if (url.startsWith('/uploads') && !url.includes('localhost')) {
             return `http://localhost:5000${url}`;
         }
-        
+
         return url;
     };
-    
+
     const imageUrl = getImageUrl(purchase?.payment_proof);
-    
+
     console.log("Payment proof URL:", {
         original: purchase?.payment_proof,
         processed: imageUrl
@@ -788,9 +798,9 @@ function PaymentVerificationModal({ purchase, onVerify, onClose, loading }) {
                             <div className="border-2 border-dashed border-gray-300 rounded-xl p-4">
                                 {imageUrl ? (
                                     <div className="relative">
-                                        <img 
-                                            src={imageUrl} 
-                                            alt="Payment proof" 
+                                        <img
+                                            src={imageUrl}
+                                            alt="Payment proof"
                                             className="w-full h-auto rounded-lg max-h-96 object-contain"
                                             onError={(e) => {
                                                 console.error("Failed to load image:", imageUrl);
@@ -800,9 +810,9 @@ function PaymentVerificationModal({ purchase, onVerify, onClose, loading }) {
                                             }}
                                         />
                                         <div className="mt-2 text-center">
-                                            <a 
-                                                href={imageUrl} 
-                                                target="_blank" 
+                                            <a
+                                                href={imageUrl}
+                                                target="_blank"
                                                 rel="noopener noreferrer"
                                                 className="text-sm text-blue-600 hover:text-blue-800 underline"
                                             >

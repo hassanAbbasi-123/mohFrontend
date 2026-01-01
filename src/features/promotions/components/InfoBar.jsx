@@ -13,48 +13,48 @@ import { motion } from "framer-motion"
 const infoBarItems = [
   {
     icon: FaShippingFast,
-    title: "Free Shipping",
-    subtitle: "Over $50",
+    title: "Global Export",
+    subtitle: "Bulk & Retail",
     color: "text-emerald-500",
     bgColor: "bg-emerald-50",
     borderColor: "border-emerald-200"
   },
   {
     icon: FaThumbsUp,
-    title: "Free Returns",
-    subtitle: "60 days",
+    title: "Quality Assured",
+    subtitle: "Farm Verified",
     color: "text-green-500",
     bgColor: "bg-green-50",
     borderColor: "border-green-200"
   },
   {
     icon: FaPhoneAlt,
-    title: "24/7 Support",
-    subtitle: "Chat & call",
+    title: "Buyer Support",
+    subtitle: "B2B & B2C",
     color: "text-lime-500",
     bgColor: "bg-lime-50",
     borderColor: "border-lime-200"
   },
   {
     icon: FaHeart,
-    title: "Exclusive",
-    subtitle: "Brands",
+    title: "Trusted Farms",
+    subtitle: "Direct Sourcing",
     color: "text-amber-500",
     bgColor: "bg-amber-50",
     borderColor: "border-amber-200"
   },
   {
     icon: FaShieldAlt,
-    title: "Secure",
-    subtitle: "Payments",
+    title: "Secure Trade",
+    subtitle: "Safe Payments",
     color: "text-orange-500",
     bgColor: "bg-orange-50",
     borderColor: "border-orange-200"
   },
   {
     icon: FaGift,
-    title: "Daily Deals",
-    subtitle: "Offers",
+    title: "Seasonal Supply",
+    subtitle: "Fresh Harvest",
     color: "text-red-500",
     bgColor: "bg-red-50",
     borderColor: "border-red-200"

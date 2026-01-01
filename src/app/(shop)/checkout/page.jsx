@@ -20,8 +20,8 @@ export default function CheckoutPage() {
   const [newAddress, setNewAddress] = useState({
     street: '',
     area: '',
-    city: 'Karachi',
-    province: 'Sindh',
+    city: 'Delhi ',
+    state: 'Delhi',
     postalCode: '',
     country: 'India'
   });
@@ -57,12 +57,31 @@ export default function CheckoutPage() {
     }
   }, [router]);
 
-  const IndiaiCities = [
-    'Karachi', 'Lahore', 'Islamabad', 'Rawalpindi', 'Faisalabad', 'Multan', 
-    'Peshawar', 'Quetta', 'Sialkot', 'Gujranwala', 'Hyderabad', 'Sukkur'
-  ];
+const indianCities = [
+  'Delhi',
+  'Mumbai',
+  'Bengaluru',
+  'Chennai',
+  'Hyderabad',
+  'Kolkata',
+  'Pune',
+  'Ahmedabad',
+  'Jaipur',
+  'Chandigarh',
+  'Lucknow',
+  'Indore'
+];
 
-  const IndiaiProvinces = ['Punjab', 'Sindh', 'Khyber Pakhtunkhwa', 'Balochistan'];
+  const indianstate = ['Delhi',
+  'Maharashtra',
+  'Karnataka',
+  'Tamil Nadu',
+  'Telangana',
+  'West Bengal',
+  'Rajasthan',
+  'Gujarat',
+  'Uttar Pradesh',
+  'Punjab'];
 
   // Calculate order totals
   const subtotal = cartData?.cartTotal || 0;
@@ -93,13 +112,13 @@ export default function CheckoutPage() {
         street: selectedAddress.street || '',
         area: selectedAddress.area || '',
         city: selectedAddress.city || '',
-        province: selectedAddress.province || '',
+        state: selectedAddress.state || '',
         postalCode: selectedAddress.postalCode || '',
-        country: selectedAddress.country || 'Pakistan',
+        country: selectedAddress.country || 'India',
         phone: phoneNumber
       };
     } else if (showNewAddressForm) {
-      if (!newAddress.street.trim() || !newAddress.area.trim() || !newAddress.city.trim() || !newAddress.province.trim()) {
+      if (!newAddress.street.trim() || !newAddress.area.trim() || !newAddress.city.trim() || !newAddress.state.trim()) {
         setError('Please fill all required address fields');
         return;
       }
@@ -107,9 +126,9 @@ export default function CheckoutPage() {
         street: newAddress.street,
         area: newAddress.area,
         city: newAddress.city,
-        province: newAddress.province,
+        state: newAddress.state,
         postalCode: newAddress.postalCode || '',
-        country: newAddress.country || 'Pakistan',
+        country: newAddress.country || 'India',
         phone: phoneNumber
       };
     } else {
@@ -118,7 +137,7 @@ export default function CheckoutPage() {
     }
 
     // Validate complete address
-    if (!shippingAddress.street || !shippingAddress.area || !shippingAddress.city || !shippingAddress.province) {
+    if (!shippingAddress.street || !shippingAddress.area || !shippingAddress.city || !shippingAddress.state) {
       setError('Complete shipping address is required');
       return;
     }
@@ -323,7 +342,7 @@ export default function CheckoutPage() {
                           </div>
                           <p className="text-sm text-gray-600 mt-1">
                             {address.street}, {address.area}<br />
-                            {address.city}, {address.province} {address.postalCode}<br />
+                            {address.city}, {address.state} {address.postalCode}<br />
                             {address.country || 'Pakistan'}
                           </p>
                         </div>
@@ -391,7 +410,7 @@ export default function CheckoutPage() {
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
                       required
                     >
-                      {pakistaniCities.map(city => (
+                      {indianCities.map(city => (
                         <option key={city} value={city}>{city}</option>
                       ))}
                     </select>
@@ -399,16 +418,16 @@ export default function CheckoutPage() {
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Province *
+                      State *
                     </label>
                     <select
-                      value={newAddress.province}
-                      onChange={(e) => setNewAddress({...newAddress, province: e.target.value})}
+                      value={newAddress.state}
+                      onChange={(e) => setNewAddress({...newAddress, state: e.target.value})}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
                       required
                     >
-                      {pakistaniProvinces.map(province => (
-                        <option key={province} value={province}>{province}</option>
+                      {indianstate.map(state => (
+                        <option key={state} value={state}>{state}</option>
                       ))}
                     </select>
                   </div>

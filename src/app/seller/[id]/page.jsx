@@ -13,9 +13,9 @@ async function getSeller(id) {
       responseTime: "within 2 hours",
       followers: 12500,
       products: 247,
-      about: "MobileHut is Pakistan's premier destination for authentic smartphones and accessories. We are an authorized retailer for Samsung, Apple, Xiaomi, and other leading brands. All our products come with official warranty and 7-day return policy.",
+      about: "MobileHut is India's premier destination for authentic smartphones and accessories. We are an authorized retailer for Samsung, Apple, Xiaomi, and other leading brands. All our products come with official warranty and 7-day return policy.",
       services: [
-        "Free delivery across Pakistan",
+        "Free delivery across India",
         "Official warranty on all products",
         "7-day easy returns",
         "Installment plans available",
@@ -25,12 +25,12 @@ async function getSeller(id) {
         phone: "+92 300 1234567",
         email: "contact@mobilehut.pk",
         website: "www.mobilehut.pk",
-        address: "Main Gulberg, Lahore, Pakistan"
+        address: "Main Gulberg, Lahore, India"
       },
       socialMedia: {
         facebook: "mobilehutofficial",
         twitter: "mobilehut_pk",
-        instagram: "mobilehut.pakistan"
+        instagram: "mobilehut.India"
       }
     }
   }

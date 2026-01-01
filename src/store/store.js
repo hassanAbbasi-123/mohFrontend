@@ -17,7 +17,8 @@ import { sellerManagementApi } from "./features/sellerManagementApi";
 import { bannerApi } from "./features/bannerApi";
 import { leadsApi } from "./features/leadsApi";
 import { accountsApi } from "./features/accountsApi";  
-
+import{partnershipApi} from"./features/partnershipApi";
+import { contactApi } from "./features/contactApi";
 export const store = configureStore({
   reducer: {
     auth: authReducer,
@@ -37,7 +38,10 @@ export const store = configureStore({
     [bannerApi.reducerPath]: bannerApi.reducer,
     [leadsApi.reducerPath]: leadsApi.reducer,
     [accountsApi.reducerPath]: accountsApi.reducer,
-  },
+  [partnershipApi.reducerPath]:partnershipApi.reducer,
+  [contactApi.reducerPath]:contactApi.reducer,
+  
+},
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware()
       .concat([
@@ -57,5 +61,7 @@ export const store = configureStore({
         bannerApi.middleware,
         leadsApi.middleware,
         accountsApi.middleware,
+        partnershipApi.middleware,
+        contactApi.middleware,
       ]),
 });

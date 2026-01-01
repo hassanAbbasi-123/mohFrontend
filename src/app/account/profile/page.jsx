@@ -12,18 +12,40 @@ export default function ProfilePage() {
     type: 'home',
     street: '',
     area: '',
-    city: 'Karachi',
-    province: 'Sindh',
+    city: 'Delhi',
+    state: 'Delhi',
     postalCode: '',
     isDefault: false
   });
 
-  const pakistaniCities = [
-    'Karachi', 'Lahore', 'Islamabad', 'Rawalpindi', 'Faisalabad', 'Multan',
-    'Peshawar', 'Quetta', 'Sialkot', 'Gujranwala', 'Hyderabad', 'Sukkur'
-  ];
+const indianCities = [
+  'Delhi',
+  'Mumbai',
+  'Bengaluru',
+  'Chennai',
+  'Hyderabad',
+  'Kolkata',
+  'Pune',
+  'Ahmedabad',
+  'Jaipur',
+  'Chandigarh',
+  'Lucknow',
+  'Indore'
+];
 
-  const pakistaniProvinces = ['Punjab', 'Sindh', 'Khyber Pakhtunkhwa', 'Balochistan'];
+const indianStates = [
+  'Delhi',
+  'Maharashtra',
+  'Karnataka',
+  'Tamil Nadu',
+  'Telangana',
+  'West Bengal',
+  'Rajasthan',
+  'Gujarat',
+  'Uttar Pradesh',
+  'Punjab'
+];
+
 
   const handleSave = () => {
     if (editedUser) {
@@ -39,8 +61,8 @@ export default function ProfilePage() {
         type: newAddress.type,
         street: newAddress.street,
         area: newAddress.area,
-        city: newAddress.city || 'Karachi',
-        province: newAddress.province || 'Sindh',
+        city: newAddress.city || 'Delhi',
+        state: newAddress.state || 'Delhi',
         postalCode: newAddress.postalCode || '',
         isDefault: newAddress.isDefault || false
       };
@@ -60,8 +82,8 @@ export default function ProfilePage() {
         type: 'home',
         street: '',
         area: '',
-        city: 'Karachi',
-        province: 'Sindh',
+        city: 'Delhi',
+        state: 'Delhi',
         postalCode: '',
         isDefault: false
       });
@@ -259,21 +281,21 @@ export default function ProfilePage() {
                       onChange={(e) => setNewAddress({ ...newAddress, city: e.target.value })}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
                     >
-                      {pakistaniCities.map(city => (
+                      {indianCities.map(city => (
                         <option key={city} value={city}>{city}</option>
                       ))}
                     </select>
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Province</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">state</label>
                     <select
-                      value={newAddress.province}
-                      onChange={(e) => setNewAddress({ ...newAddress, province: e.target.value })}
+                      value={newAddress.state}
+                      onChange={(e) => setNewAddress({ ...newAddress, state: e.target.value })}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
                     >
-                      {pakistaniProvinces.map(province => (
-                        <option key={province} value={province}>{province}</option>
+                      {indianStates.map(state => (
+                        <option key={state} value={state}>{state}</option>
                       ))}
                     </select>
                   </div>
@@ -338,7 +360,7 @@ export default function ProfilePage() {
                       <p className="text-gray-600 text-sm">
                         {address.street}<br />
                         {address.area}<br />
-                        {address.city}, {address.province} {address.postalCode}
+                        {address.city}, {address.state} {address.postalCode}
                       </p>
                     </div>
                     <div className="flex items-center gap-2">

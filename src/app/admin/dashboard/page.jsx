@@ -41,6 +41,8 @@ import AdminInventory from "@/app/components/admin/dashboard/AdminInventory";
 import AdminBannerManagement from "@/app/components/admin/dashboard/AdminBannerManagement";
 import LeadsManagement from "@/app/components/admin/dashboard/LeadsManagement";
 import AccountsManagement from "@/app/components/admin/dashboard/AccountsManagement";
+import AdminPartnershipsPage from "@/app/components/admin/dashboard/PartnershipManagement";
+import AdminContactManagement from "@/app/components/admin/dashboard/AdminContactManagement";
 import { useGetProfileQuery, useUpdateProfileMutation, useChangePasswordMutation, useUploadProfilePictureMutation } from "@/store/features/profileApi";
 import { useRouter } from "next/navigation";
 import ProtectedRoute from "@/components/auth/ProtectedRoute";
@@ -142,6 +144,9 @@ export default function AdminDashboard() {
     { id: "orders", label: "Order Management", icon: "orders", color: "from-lime-500 to-green-500" },
     { id: "analytics", label: "Analytics & Reports", icon: "analytics", color: "from-violet-500 to-purple-500" },
     { id: "banners", label: "Banner Management", icon: "banners", color: "from-violet-500 to-purple-500" },
+    { id: "Partnership", label: "AdminPartnershipsPage", icon: "banners", color: "from-violet-500 to-purple-500" },
+    { id: "contactus", label: "AdminContactManagement", icon: "banners", color: "from-violet-500 to-purple-500" },
+  
   ];
 
   const handleProfileInputChange = (e) => {
@@ -576,7 +581,13 @@ export default function AdminDashboard() {
       case "banners":
         content = <AdminBannerManagement />;
         break;
-      default:
+        case "Partnership":
+          content=<AdminPartnershipsPage />;
+          break;
+          case "contactus":
+            content=<AdminContactManagement />;
+          break;
+            default:
         content = <DashboardOverview />;
     }
     return (

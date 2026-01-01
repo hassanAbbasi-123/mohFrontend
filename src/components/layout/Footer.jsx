@@ -16,7 +16,8 @@ import {
   FaApplePay,
   FaHeart,
   FaRocket,
-  FaTiktok
+  FaTiktok,
+  FaLinkedinIn
 } from "react-icons/fa";
 import { 
   Mail, 
@@ -163,18 +164,19 @@ export default function Footer() {
             </div>
 
             <p className="text-white/70 mb-6 leading-relaxed text-sm text-center sm:text-left">
-              Pakistan's premier multi-vendor marketplace connecting buyers with trusted sellers. 
+              India's premier multi-vendor marketplace connecting buyers with trusted sellers. 
               Experience seamless shopping with premium products and exceptional service.
             </p>
 
             {/* Social Links */}
             <div className="flex flex-wrap justify-center sm:justify-start items-center gap-3 mb-6">
               {[
-                { icon: FaFacebookF, href: "https://www.facebook.com/", color: "hover:text-blue-400" },
-                { icon: FaTwitter, href: "https://twitter.com/yourprofile", color: "hover:text-cyan-400" },
-                { icon: FaInstagram, href: "https://www.instagram.com/", color: "hover:text-pink-400" },
-                { icon: FaYoutube, href: "https://www.youtube.com/", color: "hover:text-red-400" },
-                { icon: FaTiktok, href: "https://www.tiktok.com/", color: "hover:text-purple-400" },
+                { icon: FaFacebookF, href: "https://www.facebook.com/groups/1834924583751273/?ref=share&mibextid=NSMWBT", color: "hover:text-blue-400" },
+                //{ icon: FaTwitter, href: "https://twitter.com/yourprofile", color: "hover:text-cyan-400" },
+               // { icon: FaInstagram, href: "https://www.instagram.com/", color: "hover:text-pink-400" },
+               /// { icon: FaYoutube, href: "https://www.youtube.com/", color: "hover:text-red-400" },
+               // { icon: FaTiktok, href: "https://www.tiktok.com/", color: "hover:text-purple-400" },
+                { icon: FaLinkedinIn, href: "https://www.linkedin.com/in/md-tajim-sk-6872223a3?utm_source=share&utm_campaign=share_via&utm_content=profile&utm_medium=android_app", color: "hover:text-purple-400" },
               ].map((social, index) => {
                 const Icon = social.icon;
                 return (
@@ -241,95 +243,7 @@ export default function Footer() {
           ))}
 
           {/* Newsletter Section */}
-          <motion.div
-            initial={{ x: 30, opacity: 0 }}
-            whileInView={{ x: 0, opacity: 1 }}
-            transition={{ duration: 0.6, delay: 0.4 }}
-            className="lg:col-span-2 md:col-span-2"
-          >
-            <div className="bg-gradient-to-br from-green-500/10 to-emerald-500/10 border border-white/10 rounded-2xl p-6 backdrop-blur-sm text-center sm:text-left">
-              <div className="flex items-center justify-center sm:justify-start gap-2 mb-3">
-                <Mail className="w-5 h-5 text-amber-300" />
-                <h3 className="font-bold text-white text-lg">Stay in the Loop</h3>
-              </div>
-              
-              <p className="text-white/70 mb-4 text-sm leading-relaxed">
-                Get exclusive deals, product launches, and insider updates delivered straight to your inbox.
-              </p>
-
-              {isSubscribed ? (
-                <motion.div
-                  initial={{ scale: 0.8, opacity: 0 }}
-                  animate={{ scale: 1, opacity: 1 }}
-                  className="bg-gradient-to-r from-amber-500/20 to-yellow-500/20 border border-amber-500/30 rounded-xl p-4 text-center"
-                >
-                  <div className="flex items-center justify-center gap-2 text-amber-300">
-                    <BadgeCheck className="w-5 h-5" />
-                    <span className="font-bold">Welcome to the MOH Capital Family!</span>
-                  </div>
-                  <p className="text-amber-200 text-sm mt-1">
-                    You'll receive your first update shortly.
-                  </p>
-                </motion.div>
-              ) : (
-                <form onSubmit={handleSubscribe} className="space-y-3">
-                  <div className="relative">
-                    <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-white/40" />
-                    <input
-                      type="email"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      placeholder="Enter your email"
-                      className="w-full pl-10 pr-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-amber-500/50 focus:border-amber-500/50 transition-all duration-300"
-                      required
-                    />
-                  </div>
-                  <motion.button
-                    type="submit"
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                    className="w-full bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-600 hover:to-yellow-600 text-white py-3 rounded-xl font-bold shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center gap-2"
-                  >
-                    <Zap className="w-4 h-4" />
-                    Subscribe Now
-                  </motion.button>
-                </form>
-              )}
-
-              {/* Payment Methods */}
-              <div className="mt-6 pt-6 border-t border-white/10">
-                <div className="flex items-center justify-center sm:justify-start gap-2 mb-3">
-                  <Shield className="w-4 h-4 text-amber-400" />
-                  <span className="text-white/80 font-bold text-sm">Secure Payments Coming soon</span>
-                </div>
-                <div className="flex flex-wrap justify-center sm:justify-start gap-3">
-                  {[
-                    { icon: FaCcVisa, name: "Visa" },
-                    { icon: FaCcMastercard, name: "Mastercard" },
-                    { icon: FaCcAmex, name: "Amex" },
-                    { icon: FaCcPaypal, name: "PayPal" },
-                    { icon: FaCcStripe, name: "Stripe" },
-                    { icon: FaGooglePay, name: "Google Pay" },
-                    { icon: FaApplePay, name: "Apple Pay" },
-                  ].map((payment, index) => {
-                    const Icon = payment.icon;
-                    return (
-                      <motion.div
-                        key={payment.name}
-                        initial={{ scale: 0 }}
-                        whileInView={{ scale: 1 }}
-                        transition={{ delay: 0.5 + index * 0.1 }}
-                        whileHover={{ scale: 1.1, y: -2 }}
-                        className="p-2 bg-white/5 rounded-lg backdrop-blur-sm hover:bg-white/10 transition-all duration-300"
-                      >
-                        <Icon className="w-6 h-6 text-white/70 hover:text-amber-300" />
-                      </motion.div>
-                    );
-                  })}
-                </div>
-              </div>
-            </div>
-          </motion.div>
+         
         </div>
 
         {/* Bottom Bar */}

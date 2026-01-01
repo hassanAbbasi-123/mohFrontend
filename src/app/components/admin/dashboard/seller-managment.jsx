@@ -53,6 +53,7 @@ export default function SellerManagement() {
   const [itemsPerPage, setItemsPerPage] = useState(10);
   const [isSearchFocused, setIsSearchFocused] = useState(false);
   const [expandedRows, setExpandedRows] = useState(new Set());
+  const [actionFeedback, setActionFeedback] = useState({ show: false, message: "", type: "" });
 
   // ── FETCH SELLERS ───────────────────────────────────────
   const {
@@ -73,16 +74,28 @@ export default function SellerManagement() {
     }
   );
 
-  const [approveOrDisapproveSeller] = useApproveOrDisapproveSellerMutation();
+  const [approveOrDisapproveSeller, { isLoading: isActionLoading }] = useApproveOrDisapproveSellerMutation();
 
   // ── ACTION HANDLER ───────────────────────────────────────
   const handleAction = async (sellerId, action) => {
     if (!confirm(`Are you sure you want to ${action} this seller?`)) return;
+
     try {
       await approveOrDisapproveSeller({ sellerId, action }).unwrap();
-      refetch();
+      setActionFeedback({
+        show: true,
+        message: `Seller successfully ${action}d!`,
+        type: "success",
+      });
+      refetch(); // Refresh list immediately
+      setTimeout(() => setActionFeedback({ show: false, message: "", type: "" }), 4000);
     } catch (e) {
-      alert(e?.data?.message || "Action failed");
+      setActionFeedback({
+        show: true,
+        message: e?.data?.message || "Action failed. Please try again.",
+        type: "error",
+      });
+      setTimeout(() => setActionFeedback({ show: false, message: "", type: "" }), 5000);
     }
   };
 
@@ -151,6 +164,24 @@ export default function SellerManagement() {
           Manage and monitor seller accounts and performance
         </p>
       </div>
+
+      {/* Action Feedback */}
+      {actionFeedback.show && (
+        <div
+          className={`mb-6 p-4 rounded-xl border flex items-center gap-3 transition-all ${
+            actionFeedback.type === "success"
+              ? "bg-green-50 border-green-200 text-green-800"
+              : "bg-red-50 border-red-200 text-red-800"
+          }`}
+        >
+          {actionFeedback.type === "success" ? (
+            <CheckCircle className="w-5 h-5 flex-shrink-0" />
+          ) : (
+            <XCircle className="w-5 h-5 flex-shrink-0" />
+          )}
+          <span className="font-medium">{actionFeedback.message}</span>
+        </div>
+      )}
 
       {/* Metrics */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-8">
@@ -271,6 +302,7 @@ export default function SellerManagement() {
                 <tbody className="divide-y divide-gray-100">
                   {sellers.map((seller, idx) => {
                     const isExpanded = expandedRows.has(seller._id);
+                    const kycStatus = seller.kycStatus || seller.seller?.kycStatus || "pending";
                     return (
                       <>
                         {/* Main Row */}
@@ -315,19 +347,19 @@ export default function SellerManagement() {
                           <td className="px-4 sm:px-6 py-4 whitespace-nowrap">
                             <span
                               className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${
-                                seller.kycStatus === "approved"
+                                kycStatus === "approved"
                                   ? "bg-green-50 text-green-700 ring-1 ring-green-200"
-                                  : seller.kycStatus === "rejected"
+                                  : kycStatus === "rejected"
                                   ? "bg-red-50 text-red-700 ring-1 ring-red-200"
                                   : "bg-orange-50 text-orange-700 ring-1 ring-orange-200"
                               }`}
                             >
-                              {seller.kycStatus === "approved" ? (
+                              {kycStatus === "approved" ? (
                                 <>
                                   <CheckCircle className="w-4 h-4 mr-1" />
                                   Approved
                                 </>
-                              ) : seller.kycStatus === "rejected" ? (
+                              ) : kycStatus === "rejected" ? (
                                 <>
                                   <XCircle className="w-4 h-4 mr-1" />
                                   Rejected
@@ -359,26 +391,28 @@ export default function SellerManagement() {
 
                           {/* Actions */}
                           <td className="px-4 sm:px-6 py-4 whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
-                            <div className="flex items-center gap-2">
-                              {seller.kycStatus === "pending" && (
+                            <div className="flex flex-wrap items-center gap-2">
+                              {kycStatus === "pending" && (
                                 <>
                                   <button
                                     onClick={() => handleAction(seller._id, "approve")}
-                                    className="px-3 py-1.5 bg-green-500 text-white text-xs rounded-lg hover:bg-green-600 transition-colors"
+                                    disabled={isActionLoading}
+                                    className="px-4 py-1.5 bg-green-500 text-white text-xs rounded-lg hover:bg-green-600 disabled:opacity-70 transition-colors font-medium"
                                   >
-                                    Approve
+                                    {isActionLoading ? "Processing..." : "Approve"}
                                   </button>
                                   <button
                                     onClick={() => handleAction(seller._id, "reject")}
-                                    className="px-3 py-1.5 bg-red-500 text-white text-xs rounded-lg hover:bg-red-600 transition-colors"
+                                    disabled={isActionLoading}
+                                    className="px-4 py-1.5 bg-red-500 text-white text-xs rounded-lg hover:bg-red-600 disabled:opacity-70 transition-colors font-medium"
                                   >
-                                    Reject
+                                    {isActionLoading ? "Processing..." : "Reject"}
                                   </button>
                                 </>
                               )}
                               <button
                                 onClick={() => setSelectedSeller(seller)}
-                                className="px-3 py-1.5 bg-blue-500 text-white text-xs rounded-lg hover:bg-blue-600 transition-colors"
+                                className="px-4 py-1.5 bg-blue-500 text-white text-xs rounded-lg hover:bg-blue-600 transition-colors font-medium"
                               >
                                 Performance
                               </button>

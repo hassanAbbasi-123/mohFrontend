@@ -1,4 +1,4 @@
-// src/store/features/authApi.js (FULLY UPDATED - added new mutations for OTP verify, resend, forgot, reset)
+// src/store/features/authApi.js (UPDATED - verification OTP mutations removed)
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
@@ -41,22 +41,6 @@ export const authApi = createApi({
         headers: { 'Content-Type': 'application/json' },
       }),
     }),
-    verifyOtp: builder.mutation({
-      query: ({ userId, otp }) => ({
-        url: '/verify-otp',
-        method: 'POST',
-        body: { userId, otp },
-        headers: { 'Content-Type': 'application/json' },
-      }),
-    }),
-    resendVerificationOtp: builder.mutation({
-      query: ({ email }) => ({
-        url: '/resend-verification-otp',
-        method: 'POST',
-        body: { email },
-        headers: { 'Content-Type': 'application/json' },
-      }),
-    }),
     forgotPassword: builder.mutation({
       query: ({ email }) => ({
         url: '/forgot-password',
@@ -90,8 +74,6 @@ export const authApi = createApi({
 export const {
   useRegisterMutation,
   useLoginMutation,
-  useVerifyOtpMutation,
-  useResendVerificationOtpMutation,
   useForgotPasswordMutation,
   useResetPasswordMutation,
   useApproveSellerMutation,

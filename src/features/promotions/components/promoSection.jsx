@@ -6,22 +6,22 @@ import { FaChevronLeft, FaChevronRight, FaHome, FaHeart, FaShoppingCart, FaUser,
 import { motion, AnimatePresence } from 'framer-motion'
 import { useGetActiveBannersQuery } from '@/store/features/bannerApi'
 import Link from 'next/link'
-import { Search, ShoppingCart, PhoneCall, Heart, User } from 'lucide-react'
-import { useGetCartCountQuery } from '@/store/features/cartApi'
-import { useGetSearchSuggestionsQuery } from '@/store/features/productApi'
+import Image from 'next/image'
+import { Menu, X, Search, ShoppingCart, PhoneCall, Heart, User, ChevronDown, UserPlus,
+  LogIn } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 
 // Define API_BASE
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
 
-// Default fallback slides with vegetable/fruit theme
+// Default fallback slides with vegetable/fruit theme - FIXED: Removed image paths to prevent 404 errors
 const defaultSlides = [
   {
     id: 1,
     title: "Fresh Vegetables",
     subtitle: "Farm to Table Quality",
     bgColor: "from-green-500 to-emerald-600",
-    image: "/vegetables-banner.jpg",
+    image: "", // Empty string to prevent 404 error
     overlay: "bg-gradient-to-r",
     textColor: "text-white"
   },
@@ -30,7 +30,7 @@ const defaultSlides = [
     title: "Organic Fruits",
     subtitle: "Nature's Sweetest Treats",
     bgColor: "from-orange-500 to-red-500",
-    image: "/fruits-banner.jpg",
+    image: "", // Empty string to prevent 404 error
     overlay: "bg-gradient-to-br",
     textColor: "text-white"
   },
@@ -39,7 +39,7 @@ const defaultSlides = [
     title: "Premium Seeds",
     subtitle: "Grow Your Own Garden",
     bgColor: "from-amber-500 to-yellow-600",
-    image: "/seeds-banner.jpg",
+    image: "", // Empty string to prevent 404 error
     overlay: "bg-gradient-to-tr",
     textColor: "text-white"
   },
@@ -48,7 +48,7 @@ const defaultSlides = [
     title: "Dried Legumes",
     subtitle: "Healthy & Nutritious",
     bgColor: "from-amber-700 to-orange-800",
-    image: "/legumes-banner.jpg",
+    image: "", // Empty string to prevent 404 error
     overlay: "bg-gradient-to-l",
     textColor: "text-white"
   },
@@ -57,7 +57,7 @@ const defaultSlides = [
     title: "Seasonal Specials",
     subtitle: "Fresh Picked Daily",
     bgColor: "from-lime-500 to-green-600",
-    image: "/seasonal-banner.jpg",
+    image: "", // Empty string to prevent 404 error
     overlay: "bg-gradient-to-t",
     textColor: "text-white"
   },
@@ -65,14 +65,15 @@ const defaultSlides = [
 
 export default function HeroBanner() {
   const { data: fetchedBanners, isLoading, isError } = useGetActiveBannersQuery()
-  const { data: cartCount } = useGetCartCountQuery()
-  const { data: suggestions, isLoading: isSuggestionsLoading } = useGetSearchSuggestionsQuery('', { skip: true })
+  
+  
   
   const [search, setSearch] = useState('')
   const [showSuggestions, setShowSuggestions] = useState(false)
   const [isMobile, setIsMobile] = useState(false)
   const [showMobileSearch, setShowMobileSearch] = useState(false)
   const [isScrolled, setIsScrolled] = useState(false)
+  const [showMobileMenu, setShowMobileMenu] = useState(false)
   const searchRef = useRef(null)
   const router = useRouter()
 
@@ -91,7 +92,7 @@ export default function HeroBanner() {
           title: b.title || "",
           subtitle: b.subtitle || "",
           bgColor: b.bgColor || "from-green-500 to-emerald-600",
-          image: image || "/placeholder.jpg",
+          image: image || "", // Use empty string if no image
           overlay: b.overlay || "bg-gradient-to-br",
           textColor: b.textColor || "text-white",
         }
@@ -193,10 +194,21 @@ export default function HeroBanner() {
   const toggleMobileSearch = () => {
     setShowMobileSearch(!showMobileSearch)
     setShowSuggestions(false)
+    // Close menu if search is opened
+    if (!showMobileSearch) {
+      setShowMobileMenu(false)
+    }
   }
 
-  const totalItems = cartCount?.totalItems || 0
-  const cartTotal = cartCount?.cartTotal || 0
+  const toggleMobileMenu = () => {
+    setShowMobileMenu(!showMobileMenu)
+    // Close search if menu is opened
+    if (!showMobileMenu) {
+      setShowMobileSearch(false)
+    }
+  }
+
+
 
   const slideVariants = {
     enter: (direction) => ({
@@ -257,123 +269,276 @@ export default function HeroBanner() {
     {
       id: 'favorites',
       label: 'Favorites',
-      icon: FaHeart,
-      href: '/favorites'
+      icon: UserPlus,
+      href: '/signup' // Updated to /signup
     },
-    {
-      id: 'cart',
-      label: 'Cart',
-      icon: FaShoppingCart,
-      href: '/cart',
-      badge: totalItems > 0 ? totalItems : null
-    },
+   
     {
       id: 'account',
       label: 'Account',
-      icon: FaUser,
+      icon: LogIn,
       href: '/login'
     }
   ]
 
   return (
     <>
-      {/* Main Banner Container - Separate from mobile bottom bar */}
+      {/* Mobile View - Hamburger, Logo, Search - SHOWN ONLY ON MOBILE */}
+      <div className="md:hidden bg-gradient-to-r from-green-700 to-emerald-800 text-white text-sm">
+        <div className="px-4">
+          <div className="flex items-center justify-between py-2">
+            {/* Hamburger Menu */}
+            <button
+              onClick={toggleMobileMenu}
+              className="flex items-center space-x-2 text-white hover:text-green-300 transition-colors"
+              aria-label="Toggle menu"
+            >
+              {showMobileMenu ? (
+                <X size={24} />
+              ) : (
+                <Menu size={24} />
+              )}
+            </button>
+
+            {/* Logo in Center - WITH YOUR LOGO IMAGE */}
+            <Link href="/" className="flex items-center space-x-2 cursor-pointer">
+              <Image
+                src="/mohcapitallogo.webp"
+                alt="MOH Capital Logo"
+                width={40}
+                height={40}
+                className="rounded-full"
+              />
+              <div className="text-lg font-bold text-white drop-shadow-lg">
+                MOH<span className="text-yellow-400">Capital</span>
+              </div>
+            </Link>
+
+            {/* Search Icon on Right */}
+            <button 
+              onClick={toggleMobileSearch}
+              className="flex items-center space-x-2 text-white hover:text-green-300 transition-colors"
+              aria-label="Search"
+            >
+              <Search size={24} />
+            </button>
+          </div>
+        </div>
+
+        {/* Mobile Search Bar - Below the green bar */}
+        {isMobile && showMobileSearch && (
+          <div className="md:hidden bg-white p-4 border-t border-emerald-800">
+            <div className="flex items-center gap-3">
+              <button 
+                onClick={() => setShowMobileSearch(false)}
+                className="flex-shrink-0 text-gray-600"
+              >
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M19 12H5M12 19l-7-7 7-7"/>
+                </svg>
+              </button>
+              <div className="flex-1 relative">
+                <form onSubmit={handleSearchSubmit}>
+                  <div className="flex items-center bg-white rounded-full px-4 py-2 border-2 border-green-300 focus-within:border-green-500 transition-all duration-200">
+                    <input
+                      type="text"
+                      value={search}
+                      onChange={handleSearchChange}
+                      placeholder="Search for fresh produce..."
+                      className="flex-1 text-black bg-transparent outline-none px-2 min-w-0 text-sm placeholder-gray-500"
+                      autoFocus
+                    />
+                    <button type="submit">
+                      <Search className="text-green-600 flex-shrink-0 cursor-pointer hover:text-green-700 transition-colors" size={20} />
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Mobile Menu Dropdown - Below the green bar */}
+        {isMobile && showMobileMenu && (
+          <div className="md:hidden bg-emerald-900 border-t border-emerald-800">
+            <div className="px-4 py-3 space-y-4">
+              <div className="space-y-3">
+                <h3 className="text-green-300 text-xs font-semibold uppercase tracking-wider">
+                  Quick Links
+                </h3>
+                <Link 
+                  href="/" 
+                  className="flex items-center justify-between py-2 text-white hover:text-green-300 transition-colors border-b border-emerald-800"
+                  onClick={() => setShowMobileMenu(false)}
+                >
+                  <div className="flex items-center space-x-3">
+                    <FaHome size={18} />
+                    <span className="font-medium">Home</span>
+                  </div>
+                </Link>
+                <Link 
+                  href="/our-partners" 
+                  className="flex items-center justify-between py-2 text-white hover:text-green-300 transition-colors border-b border-emerald-800"
+                  onClick={() => setShowMobileMenu(false)}
+                >
+                  <span className="font-medium">Our Partners</span>
+                  <ChevronDown size={18} className="transform -rotate-90" />
+                </Link>
+                <Link 
+                  href="/become-seller" 
+                  className="flex items-center justify-between py-2 text-white hover:text-green-300 transition-colors border-b border-emerald-800"
+                  onClick={() => setShowMobileMenu(false)}
+                >
+                  <span className="font-medium">Become a Seller</span>
+                  <ChevronDown size={18} className="transform -rotate-90" />
+                </Link>
+              </div>
+              
+              <div className="space-y-3">
+                <h3 className="text-green-300 text-xs font-semibold uppercase tracking-wider">
+                  Support
+                </h3>
+                <Link 
+                  href="/contact-about" 
+                  className="flex items-center justify-between py-2 text-white hover:text-green-300 transition-colors border-b border-emerald-800"
+                  onClick={() => setShowMobileMenu(false)}
+                >
+                  <span className="font-medium">Contact Us</span>
+                  <ChevronDown size={18} className="transform -rotate-90" />
+                </Link>
+                <Link 
+                  href="/faq" 
+                  className="flex items-center justify-between py-2 text-white hover:text-green-300 transition-colors"
+                  onClick={() => setShowMobileMenu(false)}
+                >
+                  <span className="font-medium">FAQs</span>
+                  <ChevronDown size={18} className="transform -rotate-90" />
+                </Link>
+              </div>
+
+              <div className="space-y-3">
+                <h3 className="text-green-300 text-xs font-semibold uppercase tracking-wider">
+                  Account
+                </h3>
+                <Link 
+                  href="/signup" 
+                  className="flex items-center justify-between py-2 text-white hover:text-green-300 transition-colors border-b border-emerald-800"
+                  onClick={() => setShowMobileMenu(false)}
+                >
+                  <div className="flex items-center space-x-3">
+                    <UserPlus size={18} />
+                    <span className="font-medium">Wishlist</span>
+                  </div>
+                </Link>
+                <Link 
+                  href="/login" 
+                  className="flex items-center justify-between py-2 text-white hover:text-green-300 transition-colors"
+                  onClick={() => setShowMobileMenu(false)}
+                >
+                  <div className="flex items-center space-x-3">
+                    <LogIn size={18} />
+                    <span className="font-medium">My Account</span>
+                  </div>
+                </Link>
+              </div>
+              
+              {/* Hotline in Mobile Menu */}
+              <div className="pt-4 border-t border-emerald-800">
+                <div className="flex items-center space-x-3">
+                  <PhoneCall size={18} className="text-green-300" />
+                  <div>
+                    <div className="text-green-300 text-sm font-semibold">Hot Line 24/7</div>
+                    <div className="text-white text-sm">(+91)96476 24282</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Main Banner Container - With Desktop Navigation on Top of Banner */}
       <div
         className="relative w-full h-[60vh] sm:h-[70vh] md:h-[80vh] lg:h-[85vh] max-h-[800px] overflow-hidden"
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
       >
-        {/* Navigation Bar on Banner Top */}
-        <div className={`absolute top-0 left-0 w-full z-50 transition-all duration-300 ${
-          isScrolled ? 'bg-white shadow-lg' : 'bg-transparent'
-        }`}>
-          <div className="px-4 py-3 flex items-center justify-between">
-            {/* Empty left side - Logo removed */}
-            <div className="flex items-center space-x-2 cursor-pointer min-w-max"></div>
-
-            {/* Right Side Icons - Hide cart on mobile since it's in bottom bar */}
-            <div className="flex items-center space-x-4">
-              {/* Desktop Hotline */}
-              <div className="hidden md:flex items-center space-x-2">
-                <PhoneCall size={18} className={`flex-shrink-0 ${isScrolled ? 'text-green-600' : 'text-yellow-300'}`} />
-                <div className="hidden lg:block">
-                  <div className={`font-bold ${isScrolled ? 'text-green-700' : 'text-white'}`}>Hot Line 24/7</div>
-                  <div className={`text-sm ${isScrolled ? 'text-green-600' : 'text-green-100'}`}>(+92)311-6636050</div>
+        {/* Desktop Navigation Bar - On Top of Banner Image */}
+        <div className="hidden md:block absolute top-0 left-0 w-full z-50">
+          <div className="container mx-auto px-4 py-4">
+            <div className="flex items-center justify-between">
+              {/* Logo - WITH YOUR LOGO IMAGE ON LEFT SIDE */}
+              <Link href="/" className="flex items-center space-x-2">
+                <Image
+                  src="/mohcapitallogo.webp"
+                  alt="MOH Capital Logo"
+                  width={40}
+                  height={40}
+                  className="rounded-full"
+                />
+                <div className="text-xl font-bold text-white drop-shadow-lg">
+                  MOH<span className="text-yellow-400">Capital</span>
                 </div>
+              </Link>
+
+              {/* Search Bar */}
+              <div className="flex-1 max-w-2xl mx-8">
+                <form onSubmit={handleSearchSubmit}>
+                  <div className="flex items-center rounded-full px-6 py-3 border-2 transition-all duration-200 shadow-lg bg-white/10 backdrop-blur-md border-white/30 focus-within:border-white/50">
+                    <input
+                      type="text"
+                      value={search}
+                      onChange={(e) => setSearch(e.target.value)}
+                      placeholder="Search for fresh vegetables, fruits, seeds..."
+                      className="flex-1 bg-transparent outline-none px-2 min-w-0 text-sm text-white placeholder-white/70"
+                    />
+                    <button type="submit">
+                      <Search className="flex-shrink-0 cursor-pointer transition-colors text-white hover:text-yellow-300" size={20} />
+                    </button>
+                  </div>
+                </form>
               </div>
 
-              {/* Wishlist - Hide on mobile since it's in bottom bar */}
-              <Link href="#" className={`p-2 ${isScrolled ? 'text-green-700' : 'text-white'} hover:text-yellow-400 transition-colors drop-shadow-lg ${isMobile ? 'hidden' : ''}`}>
-                <Heart size={24} />
-              </Link>
+              {/* Right Side Icons */}
+              <div className="flex items-center space-x-6">
+                {/* Hotline */}
+                <a
+  href="https://wa.me/919647624282"
+  target="_blank"
+  rel="noopener noreferrer"
+  className="hidden lg:flex items-center space-x-2 hover:opacity-90 transition-opacity"
+>
+  <PhoneCall size={18} className="flex-shrink-0 text-yellow-300" />
+  <div>
+    <div className="font-bold text-white text-sm drop-shadow-lg">
+      WhatsApp 24/7
+    </div>
+    <div className="text-xs text-green-100 drop-shadow-lg">
+      (+91) 96476 24282
+    </div>
+  </div>
+</a>
 
-              {/* User Account - Hide on mobile since it's in bottom bar */}
-              <Link href="/login" className={`p-2 ${isScrolled ? 'text-green-700' : 'text-white'} hover:text-yellow-400 transition-colors drop-shadow-lg ${isMobile ? 'hidden' : ''}`}>
-                <User size={24} />
-              </Link>
 
-              {/* Cart - Hide on mobile since it's in bottom bar */}
-              <button className={`flex items-center space-x-2 px-3 py-2 rounded-lg transition-all duration-200 group relative ${
-                isScrolled 
-                  ? 'bg-green-50 text-green-700 hover:bg-green-100' 
-                  : 'bg-white/10 backdrop-blur-md text-white hover:bg-white/20'
-              } ${isMobile ? 'hidden' : ''}`}>
-                <ShoppingCart className="flex-shrink-0 group-hover:text-yellow-400 transition-colors" size={20} />
-                <div>
-                  <div className="text-sm font-bold">
-                    Rs. {cartTotal.toLocaleString()}
-                  </div>
-                  <div className="hidden sm:block text-xs opacity-80">
-                    {totalItems} {totalItems === 1 ? 'item' : 'items'}
-                  </div>
-                </div>
-                
-                {/* Cart Badge */}
-                {totalItems > 0 && (
-                  <span className="absolute -top-2 -right-2 bg-orange-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-bold animate-pulse">
-                    {totalItems > 99 ? '99+' : totalItems}
-                  </span>
-                )}
-              </button>
+                {/* Wishlist */}
+                <Link href="/signup" className="p-2 text-white hover:text-yellow-300 transition-colors drop-shadow-lg">
+                  <UserPlus size={24} />
+                </Link>
+
+                {/* User Account */}
+                <Link href="/login" className="p-2 text-white hover:text-yellow-300 transition-colors drop-shadow-lg">
+                  <LogIn size={24} />
+                </Link>
+
+               
+
+              </div>
             </div>
           </div>
-
-          {/* Mobile Search Bar */}
-          {isMobile && showMobileSearch && (
-            <div className="absolute top-full left-0 w-full bg-white p-4 shadow-lg z-50">
-              <div className="flex items-center gap-3">
-                <button 
-                  onClick={() => setShowMobileSearch(false)}
-                  className="flex-shrink-0 text-gray-600"
-                >
-                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M19 12H5M12 19l-7-7 7-7"/>
-                  </svg>
-                </button>
-                <div className="flex-1 relative">
-                  <form onSubmit={handleSearchSubmit}>
-                    <div className="flex items-center bg-white rounded-full px-4 py-2 border-2 border-green-300 focus-within:border-green-500 transition-all duration-200">
-                      <input
-                        type="text"
-                        value={search}
-                        onChange={handleSearchChange}
-                        placeholder="Search for fresh produce..."
-                        className="flex-1 text-black bg-transparent outline-none px-2 min-w-0 text-sm placeholder-gray-500"
-                        autoFocus
-                      />
-                      <button type="submit">
-                        <Search className="text-green-600 flex-shrink-0 cursor-pointer hover:text-green-700 transition-colors" size={20} />
-                      </button>
-                    </div>
-                  </form>
-                </div>
-              </div>
-            </div>
-          )}
         </div>
 
         {/* Banner Content */}
-        <div className="relative z-10 h-full w-full pt-16">
+        <div className="relative z-10 h-full w-full">
           <AnimatePresence custom={direction} initial={false}>
             {slides.length > 0 && (
               <motion.div
@@ -388,22 +553,28 @@ export default function HeroBanner() {
                 {/* Slide background */}
                 <div className={`absolute inset-0 ${slides[currentSlide].overlay} ${slides[currentSlide].bgColor} opacity-90`}></div>
 
-                {/* Image */}
-                <motion.div
-                  className="absolute inset-0 overflow-hidden"
-                  initial={{ scale: 1.15 }}
-                  animate={{ scale: 1.05 }}
-                  transition={{ duration: 8, ease: 'linear' }}
-                >
-                  <img
-                    src={slides[currentSlide].image}
-                    alt={slides[currentSlide].title}
-                    className="w-full h-full object-cover"
-                    style={{
-                      filter: 'brightness(0.95) contrast(1.05)'
-                    }}
-                  />
-                </motion.div>
+                {/* Image - Only show if image exists */}
+                {slides[currentSlide].image && (
+                  <motion.div
+                    className="absolute inset-0 overflow-hidden"
+                    initial={{ scale: 1.15 }}
+                    animate={{ scale: 1.05 }}
+                    transition={{ duration: 8, ease: 'linear' }}
+                  >
+                    <img
+                      src={slides[currentSlide].image}
+                      alt={slides[currentSlide].title}
+                      className="w-full h-full object-cover"
+                      style={{
+                        filter: 'brightness(0.95) contrast(1.05)'
+                      }}
+                      onError={(e) => {
+                        // Hide image if it fails to load
+                        e.target.style.display = 'none'
+                      }}
+                    />
+                  </motion.div>
+                )}
 
                 {/* Gradient overlay */}
                 <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/40 to-transparent"></div>
@@ -492,40 +663,49 @@ export default function HeroBanner() {
         </div>
       </div>
 
-      {/* Mobile Bottom Navigation Bar - Semi-transparent background */}
+      {/* Mobile Bottom Navigation Bar */}
       {isMobile && (
-        <div className="fixed bottom-0 left-0 right-0 z-50 bg-black/40 backdrop-blur-sm py-3 px-4">
-          <div className="flex justify-between items-center">
+        <div className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-200 shadow-lg">
+          <div className="flex items-center justify-around h-16">
             {mobileNavItems.map((item) => (
               <div key={item.id} className="flex flex-col items-center flex-1">
                 {item.href ? (
                   <Link 
                     href={item.href}
-                    className="relative flex flex-col items-center p-2 rounded-lg transition-all duration-200 hover:bg-white/20 active:bg-white/30 w-full"
+                    className="relative flex flex-col items-center p-2 w-full active:bg-gray-50 transition-colors"
+                    onClick={() => {
+                      if (item.id === 'search') {
+                        toggleMobileSearch();
+                      }
+                      setShowMobileMenu(false);
+                    }}
                   >
                     <item.icon 
-                      className={`text-xl text-white drop-shadow-lg ${item.active ? 'text-yellow-300' : 'text-white'}`}
+                      className={`text-xl ${item.active ? 'text-green-700' : 'text-green-700'}`}
                     />
-                    <span className={`text-xs mt-1 text-white drop-shadow-lg ${item.active ? 'text-yellow-300 font-semibold' : 'text-white'}`}>
+                    <span className={`text-xs mt-1 ${item.active ? 'text-green-700 font-semibold' : 'text-green-700 font-medium'}`}>
                       {item.label}
                     </span>
                     
                     {/* Badge for cart */}
                     {item.badge && item.badge > 0 && (
-                      <span className="absolute -top-1 -right-1 bg-orange-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-bold animate-pulse drop-shadow-lg">
-                        {item.badge > 99 ? '99+' : item.badge}
+                      <span className="absolute -top-1 -right-1 bg-orange-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-bold">
+                        {item.badge > 9 ? '9+' : item.badge}
                       </span>
                     )}
                   </Link>
                 ) : (
                   <button
-                    onClick={item.action}
-                    className="relative flex flex-col items-center p-2 rounded-lg transition-all duration-200 hover:bg-white/20 active:bg-white/30 w-full"
+                    onClick={() => {
+                      if (item.action) item.action();
+                      setShowMobileMenu(false);
+                    }}
+                    className="relative flex flex-col items-center p-2 w-full active:bg-gray-50 transition-colors"
                   >
                     <item.icon 
-                      className={`text-xl text-white drop-shadow-lg ${item.active ? 'text-yellow-300' : 'text-white'}`}
+                      className={`text-xl ${item.active ? 'text-green-700' : 'text-green-700'}`}
                     />
-                    <span className={`text-xs mt-1 text-white drop-shadow-lg ${item.active ? 'text-yellow-300 font-semibold' : 'text-white'}`}>
+                    <span className={`text-xs mt-1 ${item.active ? 'text-green-700 font-semibold' : 'text-green-700 font-medium'}`}>
                       {item.label}
                     </span>
                   </button>
@@ -535,6 +715,7 @@ export default function HeroBanner() {
           </div>
         </div>
       )}
+
 
       <style jsx global>{`
         @keyframes ping {
