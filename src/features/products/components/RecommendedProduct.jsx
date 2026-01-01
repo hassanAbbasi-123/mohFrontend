@@ -167,7 +167,7 @@ export default function RecommendedProducts() {
                   </div>
 
                   {/* Product Image */}
-                  <Link href={`/products/${product.slug}`} className="block flex-shrink-0">
+                  <Link href={`/product/${product.slug}`} className="block flex-shrink-0">
                     <div className="relative h-20 md:h-32 lg:h-40 w-full overflow-hidden bg-white/10">
                       <Image
                         src={buildUrl(product.image)}
@@ -182,7 +182,7 @@ export default function RecommendedProducts() {
                   {/* Product Info */}
                   <div className="p-1.5 md:p-3 flex-1 flex flex-col">
                     <div className="flex-1 mb-1.5 md:mb-3">
-                      <Link href={`/products/${product.slug}`}>
+                      <Link href={`/product/${product.slug}`}>
                         <h3 className="font-semibold text-white text-xs md:text-sm leading-tight line-clamp-2 mb-0.5 md:mb-1 hover:text-yellow-300 transition-colors duration-300">
                           {product.name}
                         </h3>
@@ -198,7 +198,7 @@ export default function RecommendedProducts() {
                     {/* Discover Button */}
                     <div className="mt-auto">
                       <Link
-                        href={`/products/${product.slug}`}
+                        href={`/product/${product.slug}`}
                         className="block w-full py-1 md:py-2 px-2 bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-600 hover:to-yellow-600 text-white rounded md:rounded-lg font-medium shadow-sm hover:shadow-md transition-all duration-300 text-center text-xs md:text-sm"
                       >
                         <span className="flex items-center justify-center gap-0.5">

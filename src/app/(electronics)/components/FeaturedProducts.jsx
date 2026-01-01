@@ -699,10 +699,10 @@ export default function FeaturedProductsWithSidebar({ addToCart, setQuickViewPro
                         {/* Price */}
                         <div className="mb-2">
                           <p className="text-lg font-bold text-yellow-300">
-                            {product.price} PKR
+                            {product.price} INR
                           </p>
                           {product.originalPrice && product.originalPrice > product.price && (
-                            <p className="text-xs line-through text-green-200">{product.originalPrice} PKR</p>
+                            <p className="text-xs line-through text-green-200">{product.originalPrice} INR</p>
                           )}
                         </div>
                       </div>
@@ -832,17 +832,17 @@ export default function FeaturedProductsWithSidebar({ addToCart, setQuickViewPro
                           <div className="flex items-center justify-between mb-3 md:mb-4">
                             <div>
                               <p className="text-base md:text-lg font-bold text-yellow-300">
-                                {product.price} PKR
+                                {product.price} INR
                               </p>
                               {product.originalPrice && product.originalPrice > product.price && (
-                                <p className="text-xs md:text-sm line-through text-green-200">{product.originalPrice} PKR</p>
+                                <p className="text-xs md:text-sm line-through text-green-200">{product.originalPrice} INR</p>
                               )}
                             </div>
                             {product.originalPrice && product.originalPrice > product.price && (
                               <div className="text-right hidden md:block">
                                 <p className="text-xs text-green-100">You save</p>
                                 <p className="text-xs md:text-sm font-bold text-amber-300">
-                                  {product.originalPrice - product.price} PKR
+                                  {product.originalPrice - product.price} INR
                                 </p>
                               </div>
                             )}
